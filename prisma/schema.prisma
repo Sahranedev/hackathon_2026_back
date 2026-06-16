@@ -12,16 +12,52 @@ datasource db {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  firstName String?    @map("first_name")
-  lastName  String?    @map("last_name")
-  mail      String     @unique()
-  password  String?
-  stravaId  String?    @map("strava_id")
-  tires     UserTire[]
-  roles     Roles[]    @default([USER])
+  id            Int            @id @default(autoincrement())
+  firstName     String?        @map("first_name")
+  lastName      String?        @map("last_name")
+  mail          String         @unique()
+  password      String?
+  stravaAccount StravaAccount?
+  oauthStates   OAuthState[]
+  tires         UserTire[]
+  roles         Roles[]        @default([USER])
 
   @@map("Users")
+}
+
+model StravaAccount {
+  id String @id @default(uuid())
+
+  userId    Int @unique
+  athleteId Int @unique
+
+  username  String?
+  firstname String?
+  lastname  String?
+  profile   String?
+
+  accessToken  String
+  refreshToken String
+  expiresAt    Int
+
+  scope String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model OAuthState {
+  id String @id @default(uuid())
+
+  provider String
+  userId   Int
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserTire {

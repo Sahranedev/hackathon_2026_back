@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../security/guards/jwt-auth.guard';
 import { JwtStrategy } from '../security/strategies/jwt.strategy';
+import { StravaModule } from 'src/strava/strava.module';
 
 const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ??
   '1d') as SignOptions['expiresIn'];
@@ -16,6 +17,7 @@ const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ??
   imports: [
     UsersModule,
     PassportModule,
+    StravaModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev_jwt_secret_change_me',
       signOptions: {
