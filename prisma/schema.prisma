@@ -57,7 +57,8 @@ model Alert {
 
 model Retail {
   id          Int     @id @default(autoincrement())
-  address     String?
+  name        String
+  address     String
   longitude   Float?
   latitude    Float?
   phoneNumber String? @map("phone_number")

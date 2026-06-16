@@ -122,6 +122,7 @@ export type AlertScalarFieldEnum = (typeof AlertScalarFieldEnum)[keyof typeof Al
 
 export const RetailScalarFieldEnum = {
   id: 'id',
+  name: 'name',
   address: 'address',
   longitude: 'longitude',
   latitude: 'latitude',
