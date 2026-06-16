@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -14,22 +15,23 @@ model User {
   id        Int        @id @default(autoincrement())
   firstName String?    @map("first_name")
   lastName  String?    @map("last_name")
-  mail      String?
+  mail      String     @unique()
   password  String?
   stravaId  String?    @map("strava_id")
   tires     UserTire[]
+  roles     Roles[]    @default([USER])
 
   @@map("Users")
 }
 
 model UserTire {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   position   String?
-  tireId     Int?     @map("tire_id")
-  userId     Int?     @map("user_id")
+  tireId     Int?      @map("tire_id")
+  userId     Int?      @map("user_id")
   kilometers Int?
-  smartTire  Boolean? @map("smart_tire")
-  isActive   Boolean? @map("isActive")
+  smartTire  Boolean?  @map("smart_tire")
+  isActive   Boolean?  @map("isActive")
   tire       TireData? @relation(fields: [tireId], references: [id])
   user       User?     @relation(fields: [userId], references: [id])
 
@@ -80,4 +82,9 @@ model ActivityTire {
 
   @@id([tireId, activityId])
   @@map("activites_has_tires")
+}
+
+enum Roles {
+  USER
+  ADMIN
 }
