@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { verifyPassword } from '../common/password.util';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -17,31 +18,25 @@ export class AuthService {
   ) {}
 
   async signUp(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersService.findByMail(
-      createUserDto.mail,
-    );
+    const existingUser = await this.usersService.findByMail(createUserDto.mail);
     if (existingUser) {
       throw new ConflictException('Un compte avec cet email existe déjà');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = await this.usersService.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
+    if (!createUserDto.password) {
+      throw new BadRequestException('Le mot de passe est requis');
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { ...result } = user;
-    return result;
+    return this.usersService.create(createUserDto);
   }
 
   async signIn(loginDto: LoginDto) {
     const user = await this.usersService.findByMail(loginDto.mail);
-    if (!user) {
+    if (!user?.password) {
       throw new UnauthorizedException('Identifiants invalides');
     }
 
-    const isPasswordValid = await bcrypt.compare(
+    const isPasswordValid = await verifyPassword(
       loginDto.password,
       user.password,
     );
