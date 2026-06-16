@@ -9,6 +9,9 @@ import { RetailsModule } from './retails/retails.module';
 import { UsersModule } from './users/users.module';
 import { StravaModule } from './strava/strava.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { TiresModule } from './tires/tires.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { ActivitiesModule } from './activities/activities.module';
     RetailsModule,
     StravaModule,
     ActivitiesModule,
+    TiresModule,
+    AlertsModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
