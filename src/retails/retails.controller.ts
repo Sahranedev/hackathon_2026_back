@@ -18,12 +18,12 @@ import { JwtAuthGuard } from 'src/security/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/security/guards/roles.guard';
 
 @UseGuards(RolesGuard, JwtAuthGuard)
+@Roles(Role.Admin)
 @Controller('api/retails')
 export class RetailsController {
   constructor(private readonly retailsService: RetailsService) {}
 
   @Post()
-  @Roles(Role.Admin)
   create(@Body() createRetailDto: CreateRetailDto) {
     return this.retailsService.create(createRetailDto);
   }
