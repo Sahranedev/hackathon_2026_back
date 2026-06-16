@@ -8,9 +8,17 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RetailsModule } from './retails/retails.module';
 import { UsersModule } from './users/users.module';
 import { StravaModule } from './strava/strava.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, RetailsModule, StravaModule],
+  imports: [
+    PrismaModule,
+    UsersModule,
+    AuthModule,
+    RetailsModule,
+    StravaModule,
+    ActivitiesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
