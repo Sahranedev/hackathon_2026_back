@@ -7,10 +7,18 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RetailsModule } from './retails/retails.module';
 import { UsersModule } from './users/users.module';
-import { StravaModule } from './strava/strava.module';
+import { TiresModule } from './tires/tires.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, RetailsModule, StravaModule],
+  imports: [
+    PrismaModule,
+    UsersModule,
+    AuthModule,
+    TiresModule,
+    AlertsModule,
+    RetailsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

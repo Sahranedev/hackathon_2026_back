@@ -61,15 +61,16 @@ model OAuthState {
 }
 
 model UserTire {
-  id         Int       @id @default(autoincrement())
-  position   String?
-  tireId     Int?      @map("tire_id")
-  userId     Int?      @map("user_id")
-  kilometers Int?
-  smartTire  Boolean?  @map("smart_tire")
-  isActive   Boolean?  @map("isActive")
-  tire       TireData? @relation(fields: [tireId], references: [id])
-  user       User?     @relation(fields: [userId], references: [id])
+  id            Int            @id @default(autoincrement())
+  position      String?
+  tireId        Int?           @map("tire_id")
+  userId        Int?           @map("user_id")
+  kilometers    Int?
+  smartTire     Boolean?       @map("smart_tire")
+  isActive      Boolean?       @map("isActive")
+  tire          TireData?      @relation(fields: [tireId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id])
+  activityTires ActivityTire[]
 
   @@map("users_tire")
 }
@@ -104,9 +105,13 @@ model Retail {
 }
 
 model TireData {
-  id         Int            @id @default(autoincrement())
-  userTires  UserTire[]
-  activities ActivityTire[]
+  id            Int        @id @default(autoincrement())
+  model         String
+  terrainTypes  String[]
+  minPressure   Float
+  maxPressure   Float
+  maxKilometers Int
+  userTires     UserTire[]
 
   @@map("tire_data")
 }
@@ -114,7 +119,7 @@ model TireData {
 model ActivityTire {
   tireId     Int      @map("tire_id")
   activityId Int      @map("activities_id")
-  tire       TireData @relation(fields: [tireId], references: [id])
+  tire       UserTire @relation(fields: [tireId], references: [id])
   activity   Activity @relation(fields: [activityId], references: [id])
 
   @@id([tireId, activityId])
