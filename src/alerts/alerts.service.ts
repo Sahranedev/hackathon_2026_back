@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { TireRule } from './interface/tire-rule.interface';
+import { Inject, Injectable } from '@nestjs/common';
+import { TireRule, TIRE_RULES } from './interface/tire-rule.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Alert } from 'src/types/alerts.type';
 
 @Injectable()
 export class AlertsService {
   constructor(
-    private readonly rules: TireRule[],
+    @Inject(TIRE_RULES) private readonly rules: TireRule[],
     private readonly prisma: PrismaService,
   ) {}
 
@@ -29,13 +29,11 @@ export class AlertsService {
         ),
       )
     ).filter((alert): alert is Alert => alert !== null);
-
-    console.log(alerts);
-
     return alerts;
   }
 
   async generateAllAlerts(): Promise<void> {
+    console.log('Generating all alerts');
     const userTires = await this.prisma.userTire.findMany({
       where: { tireId: { not: null } },
       select: { id: true },

@@ -9,6 +9,7 @@ import { RetailsModule } from './retails/retails.module';
 import { UsersModule } from './users/users.module';
 import { TiresModule } from './tires/tires.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -16,8 +17,9 @@ import { AlertsModule } from './alerts/alerts.module';
     UsersModule,
     AuthModule,
     TiresModule,
-    AlertsModule,
     RetailsModule,
+    AlertsModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

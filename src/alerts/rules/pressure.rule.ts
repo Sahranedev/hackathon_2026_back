@@ -2,24 +2,32 @@ import { Injectable } from '@nestjs/common';
 import { TireData } from 'src/generated/prisma/client';
 import { Alert, RuleContext } from 'src/types/alerts.type';
 import { TireRule } from '../interface/tire-rule.interface';
+import { AlertPersistenceService } from '../alert-persistence.service';
 
 @Injectable()
 export class PressureLowRule implements TireRule {
+  constructor(private readonly alertPersistence: AlertPersistenceService) {}
   code = 'PRESSURE';
 
-  evaluate(ctx: RuleContext, tire: TireData): Alert | null {
+  async evaluate(ctx: RuleContext, tire: TireData): Promise<Alert | null> {
     if (tire?.maxPressure && 5 > tire?.maxPressure) {
-      return {
-        code: this.code,
-        severity: 'high',
-        message: 'Pression supérieure au maximum recommandé',
-      };
+      const alert = await this.alertPersistence.createAlert(
+        ctx.tire.id,
+        this.code,
+        'Pressure supérieure au maximum recommandé',
+      );
+      if (alert) {
+        return alert;
+      }
     } else if (tire?.minPressure && 5 < tire?.minPressure) {
-      return {
-        code: this.code,
-        severity: 'high',
-        message: 'Pression inférieure au minimum recommandé',
-      };
+      const alert = await this.alertPersistence.createAlert(
+        ctx.tire.id,
+        this.code,
+        'Pressure inférieure au minimum recommandé',
+      );
+      if (alert) {
+        return alert;
+      }
     }
 
     return null;

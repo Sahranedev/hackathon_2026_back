@@ -1,9 +1,10 @@
 import { UserTire } from 'src/generated/prisma/client';
 
 export type Alert = {
+  id: number;
   code: string;
-  severity: string;
   message: string;
+  isChecked: boolean;
 };
 
 export type RuleContext = {
