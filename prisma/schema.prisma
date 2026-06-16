@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +8,76 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  firstName String?    @map("first_name")
+  lastName  String?    @map("last_name")
+  mail      String?
+  password  String?
+  stravaId  String?    @map("strava_id")
+  tires     UserTire[]
+
+  @@map("Users")
+}
+
+model UserTire {
+  id         Int      @id @default(autoincrement())
+  position   String?
+  tireId     Int?     @map("tire_id")
+  userId     Int?     @map("user_id")
+  kilometers Int?
+  smartTire  Boolean? @map("smart_tire")
+  isActive   Boolean? @map("isActive")
+  tire       TireData? @relation(fields: [tireId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
+
+  @@map("users_tire")
+}
+
+model Activity {
+  id            Int            @id @default(autoincrement())
+  startPosition Int?           @map("start_position")
+  kilometers    Int?
+  date          DateTime?      @db.Date
+  isStrava      Boolean?       @map("isStrava")
+  tires         ActivityTire[]
+
+  @@map("Activities")
+}
+
+model Alert {
+  id Int @id @default(autoincrement())
+
+  @@map("Alerts")
+}
+
+model Retail {
+  id          Int     @id @default(autoincrement())
+  address     String?
+  longitude   Float?
+  latitude    Float?
+  phoneNumber String? @map("phone_number")
+  websiteUrl  String? @map("website_url") @db.Text
+
+  @@map("Retails")
+}
+
+model TireData {
+  id         Int            @id @default(autoincrement())
+  userTires  UserTire[]
+  activities ActivityTire[]
+
+  @@map("tire_data")
+}
+
+model ActivityTire {
+  tireId     Int      @map("tire_id")
+  activityId Int      @map("activities_id")
+  tire       TireData @relation(fields: [tireId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id])
+
+  @@id([tireId, activityId])
+  @@map("activites_has_tires")
 }
