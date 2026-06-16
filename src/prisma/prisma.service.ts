@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/client';
 
 const fallbackDatabaseUrl =
   'postgresql://hackasaumon:hackasaumon@localhost:5433/hackasaumon?schema=public';

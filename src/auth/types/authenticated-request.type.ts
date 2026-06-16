@@ -1,5 +1,5 @@
-import { JwtPayload } from "../interfaces/jwt-payload.interface";
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 export interface AuthenticatedUser {
-    user?: JwtPayload;
+  user?: JwtPayload;
 }
