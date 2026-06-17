@@ -8,6 +8,6 @@ import { TiresService } from './tires.service';
   imports: [PrismaModule],
   controllers: [TiresController],
   providers: [TiresService, TireRecommendationService],
-  exports: [TireRecommendationService],,
+  exports: [TireRecommendationService],
 })
 export class TiresModule {}

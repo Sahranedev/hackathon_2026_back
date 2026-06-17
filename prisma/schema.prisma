@@ -142,6 +142,7 @@ model Alert {
   code       String
   isChecked  Boolean @default(false)
   message    String
+  metadata   Json?
 
   userTire UserTire? @relation(fields: [userTireId], references: [id])
 
