@@ -25,5 +25,6 @@ const ruleProviders = [PressureLowRule, TerrainRule, PressureKilometersRule];
       inject: ruleProviders,
     },
   ],
+  exports: [AlertPersistenceService, AlertsService],
 })
 export class AlertsModule {}

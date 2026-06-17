@@ -6,14 +6,21 @@ import { Alert } from 'src/types/alerts.type';
 export class AlertPersistenceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findActiveAlert(
+    userTireId: number,
+    code: string,
+  ): Promise<Alert | null> {
+    return this.prisma.alert.findFirst({
+      where: { userTireId, code, isChecked: false },
+    });
+  }
+
   async createAlert(
     userTireId: number,
     code: string,
     message: string,
   ): Promise<Alert> {
-    const existingAlert = await this.prisma.alert.findFirst({
-      where: { userTireId, code, isChecked: false },
-    });
+    const existingAlert = await this.findActiveAlert(userTireId, code);
 
     if (existingAlert) {
       return existingAlert;

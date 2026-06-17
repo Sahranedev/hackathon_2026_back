@@ -12,6 +12,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { TiresModule } from './tires/tires.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TireSensorModule } from './tire-sensor/tire-sensor.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ActivitiesModule,
     TiresModule,
     AlertsModule,
+    TireSensorModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

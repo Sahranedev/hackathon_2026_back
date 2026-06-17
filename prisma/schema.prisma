@@ -68,6 +68,7 @@ model UserTire {
   position      String?
   tireId        Int?           @map("tire_id")
   userId        Int?           @map("user_id")
+  deviceId      String?        @unique @map("device_id")
   kilometers    Int?
   smartTire     Boolean?       @map("smart_tire")
   isActive      Boolean?       @map("isActive")
