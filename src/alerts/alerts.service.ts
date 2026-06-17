@@ -47,19 +47,37 @@ export class AlertsService {
   async getUserAlerts(userId: number): Promise<Alert[]> {
     const alerts = await this.prisma.alert.findMany({
       where: { userTire: { userId } },
-      select: { id: true, code: true, message: true, isChecked: true },
+      select: {
+        id: true,
+        code: true,
+        message: true,
+        isChecked: true,
+        metadata: true,
+      },
     });
 
-    return alerts;
+    return alerts.map((alert) => ({
+      ...alert,
+      metadata: (alert.metadata as Alert['metadata']) ?? null,
+    }));
   }
 
-  async getTireAlerts(tireId: number): Promise<Alert[]> {
+  async getTireAlerts(userTireId: number): Promise<Alert[]> {
     const alerts = await this.prisma.alert.findMany({
-      where: { userTire: { tireId } },
-      select: { id: true, code: true, message: true, isChecked: true },
+      where: { userTireId },
+      select: {
+        id: true,
+        code: true,
+        message: true,
+        isChecked: true,
+        metadata: true,
+      },
     });
 
-    return alerts;
+    return alerts.map((alert) => ({
+      ...alert,
+      metadata: (alert.metadata as Alert['metadata']) ?? null,
+    }));
   }
 
   async checkAlert(userId: number, alertId: number): Promise<Alert> {
@@ -68,6 +86,12 @@ export class AlertsService {
       data: { isChecked: true },
     });
 
-    return alert;
+    return {
+      id: alert.id,
+      code: alert.code,
+      message: alert.message,
+      isChecked: alert.isChecked,
+      metadata: (alert.metadata as Alert['metadata']) ?? null,
+    };
   }
 }

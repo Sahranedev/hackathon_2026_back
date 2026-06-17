@@ -61,24 +61,21 @@ export class TerrainRule implements TireRule {
     });
 
     const terrainList = formatTerrainList(unsupportedTerrains);
-    const recommendedSummary = recommendations.map(
-      (rec) => `${rec.tire.model} (${rec.reason})`,
-    );
 
-    let message = `Votre pneu ${tire.model} n'est pas adapté aux terrains récents (${terrainList})`;
-    if (recommendedSummary.length > 0) {
-      const fallbackNote = recommendations[0]?.isFallback
-        ? ' (suggestions élargies)'
-        : '';
-      message += `. Pneus recommandés${fallbackNote} : ${recommendedSummary.join(' ; ')}`;
-    } else {
-      message += `. Aucun pneu du catalogue ne couvre ces terrains pour le moment`;
-    }
+    const message = `Votre pneu ${tire.model} n'est pas compatible avec le type de terrain récent (${terrainList}).`;
 
     const alert = await this.alertPersistence.createAlert(
       ctx.tire.id,
       this.code,
       message,
+      {
+        recommendedTires: recommendations.map((rec) => ({
+          id: rec.tire.id,
+          model: rec.tire.model,
+          reason: rec.reason,
+          isFallback: rec.isFallback,
+        })),
+      },
     );
     if (alert) {
       return alert;
