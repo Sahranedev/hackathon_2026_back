@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../security/guards/jwt-auth.guard';
 import { JwtStrategy } from '../security/strategies/jwt.strategy';
 import { StravaModule } from 'src/strava/strava.module';
-import { ActivitiesModule } from 'src/activities/activities.module';
+import { ReferralsModule } from 'src/referrals/referrals.module';
 
 const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ??
   '1d') as SignOptions['expiresIn'];
@@ -19,6 +19,7 @@ const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ??
     UsersModule,
     PassportModule,
     StravaModule,
+    ReferralsModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev_jwt_secret_change_me',
       signOptions: {

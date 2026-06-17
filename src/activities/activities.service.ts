@@ -3,6 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  ACTIVITY_COMPLETED,
+  ActivityCompletedEvent,
+} from '../common/events/app-events';
 import { PrismaService } from '../prisma/prisma.service';
 import { StravaService } from '../strava/strava.service';
 import {
@@ -24,7 +29,20 @@ export class ActivitiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stravaService: StravaService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  private emitActivityCompleted(activity: {
+    id: number;
+    userId: number;
+    kilometers: number | null;
+  }): void {
+    this.eventEmitter.emit(ACTIVITY_COMPLETED, {
+      userId: activity.userId,
+      activityId: activity.id,
+      kilometers: activity.kilometers ?? 0,
+    } satisfies ActivityCompletedEvent);
+  }
 
   async findAll(userId: number) {
     await this.syncStravaActivitiesIfConnected(userId);
@@ -169,6 +187,8 @@ export class ActivitiesService {
       },
     });
 
+    this.emitActivityCompleted(updatedActivity);
+
     return this.serializeActivity(updatedActivity);
   }
 
@@ -293,7 +313,7 @@ export class ActivitiesService {
         : null;
       const terrainType = this.inferTerrainType(stravaActivity);
 
-      await this.prisma.activity.upsert({
+      const upsertedActivity = await this.prisma.activity.upsert({
         where: {
           userId_stravaActivityId: {
             userId,
@@ -325,6 +345,8 @@ export class ActivitiesService {
           status: 'COMPLETED',
         },
       });
+
+      this.emitActivityCompleted(upsertedActivity);
 
       createdOrUpdated++;
     }

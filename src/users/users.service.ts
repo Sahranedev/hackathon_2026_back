@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { hashPassword } from '../common/password.util';
 import { User } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AccountType } from '../generated/prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SafeUser } from './types/safe-user.type';
@@ -59,6 +60,20 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+    });
+
+    return this.toSafeUser(user);
+  }
+
+  async updateAccountType(
+    id: number,
+    accountType: AccountType,
+  ): Promise<SafeUser> {
+    await this.findOne(id);
+
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { accountType },
     });
 
     return this.toSafeUser(user);

@@ -7,9 +7,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { Public } from '../security/decorators/public.decorator';
+import { Roles } from '../security/decorators/roles.decorator';
+import { RolesGuard } from '../security/guards/roles.guard';
+import { Role } from './enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateAccountTypeDto } from './dto/update-account-type.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -38,6 +43,19 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.Admin)
+  @Patch(':id/account-type')
+  updateAccountType(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateAccountTypeDto: UpdateAccountTypeDto,
+  ) {
+    return this.usersService.updateAccountType(
+      id,
+      updateAccountTypeDto.accountType,
+    );
   }
 
   @Delete(':id')

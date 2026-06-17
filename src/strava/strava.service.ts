@@ -6,7 +6,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class StravaService {
-  constructor(private readonly httpService: HttpService, private readonly prismaService: PrismaService) { }
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   buildAuthorizationUrl(state: string): string {
     const params = new URLSearchParams({
