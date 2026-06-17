@@ -20,6 +20,11 @@ export class AuthController {
     return this.authService.signUp(registerDto);
   }
 
+  @Get('me')
+  me(@Req() req: { user: unknown }) {
+    return req.user;
+  }
+
   @Get('strava/connect')
   async connectStrava(@Req() req: any) {
     const userId = req.user.id;
