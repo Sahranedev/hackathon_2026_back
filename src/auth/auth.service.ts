@@ -6,12 +6,13 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { verifyPassword } from '../common/password.util';
-import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { StravaService } from 'src/strava/strava.service';
 import { randomUUID } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ReferralsService } from 'src/referrals/referrals.service';
 
 @Injectable()
 export class AuthService {
@@ -20,19 +21,30 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly usersService: UsersService,
     private readonly stravaService: StravaService,
+    private readonly referralsService: ReferralsService,
   ) {}
 
-  async signUp(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersService.findByMail(createUserDto.mail);
+  async signUp(registerDto: RegisterDto) {
+    const existingUser = await this.usersService.findByMail(registerDto.mail);
     if (existingUser) {
       throw new ConflictException('Un compte avec cet email existe déjà');
     }
 
-    if (!createUserDto.password) {
+    if (!registerDto.password) {
       throw new BadRequestException('Le mot de passe est requis');
     }
 
-    return this.usersService.create(createUserDto);
+    const { referralCode, ...userData } = registerDto;
+
+    const user = await this.usersService.create(userData);
+
+    await this.referralsService.ensureReferralCode(user.id);
+
+    if (referralCode) {
+      await this.referralsService.linkReferrer(user.id, referralCode);
+    }
+
+    return user;
   }
 
   async signIn(loginDto: LoginDto) {

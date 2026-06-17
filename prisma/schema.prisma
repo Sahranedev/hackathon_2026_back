@@ -23,6 +23,16 @@ model User {
   roles         Roles[]        @default([USER])
   activities    Activity[]
 
+  accountType  AccountType @default(STANDARD) @map("account_type")
+  points       Int         @default(0)
+  currentTier  String      @default("BRONZE") @map("current_tier")
+  referralCode String?     @unique @map("referral_code")
+
+  referralsMade      Referral[]          @relation("Referrer")
+  referralReceived   Referral?           @relation("Referred")
+  pointsTransactions PointsTransaction[]
+  rewards            Reward[]
+
   @@map("Users")
 }
 
@@ -95,6 +105,7 @@ model Activity {
   startedAt        DateTime?          @map("started_at")
   endedAt          DateTime?          @map("ended_at")
   date             DateTime?          @db.Date
+  rewardedKilometers Float            @default(0) @map("rewarded_kilometers")
   tires            ActivityTire[]
   gpsPoints        ActivityGpsPoint[]
 
@@ -151,15 +162,47 @@ model Retail {
 }
 
 model TireData {
-  id            Int        @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   model         String
-  terrainTypes  String[]
+  terrainTypes  TerrainType[]
+
+  usageType     TireUsageType?
+  wheelDiameter String?       @map("wheel_diameter")
+  etrtoDiameter Int?          @map("etrto_diameter")
+  etrtoWidth    Int?          @map("etrto_width")
+
+  rimType       RimType?      @map("rim_type")
+  sealingType   SealingType?  @map("sealing_type")
+  fitting       TireFitting?  @map("fitting")
+
+  eBikeCompatible Boolean @default(false) @map("e_bike_compatible")
+
+  performanceProfiles TirePerformanceProfile[] @map("performance_profiles")
+
+  familyName    String? @map("family_name")
+  productRange  String? @map("product_range")
+
+  recommendationWeight Int @default(0) @map("recommendation_weight")
+
   minPressure   Float
   maxPressure   Float
   maxKilometers Int
   userTires     UserTire[]
 
   @@map("tire_data")
+}
+
+enum TerrainType {
+  ASPHALT
+  HARD_PACKED
+  MIXED
+  GRAVEL
+  ROCKY
+  MUD
+  SOFT
+  SAND
+  WET
+  UNKNOWN
 }
 
 model ActivityTire {
@@ -172,9 +215,87 @@ model ActivityTire {
   @@map("activites_has_tires")
 }
 
+model Referral {
+  id          Int            @id @default(autoincrement())
+  referrerId  Int            @map("referrer_id")
+  referredId  Int            @unique @map("referred_id")
+  status      ReferralStatus @default(REGISTERED)
+  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@map("referrals")
+}
+
+model PointsTransaction {
+  id        Int          @id @default(autoincrement())
+  userId    Int          @map("user_id")
+  amount    Int
+  source    PointsSource
+  reference String       @unique
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("points_transactions")
+}
+
+model Reward {
+  id              Int          @id @default(autoincrement())
+  userId          Int          @map("user_id")
+  type            RewardType
+  code            String       @unique
+  source          PointsSource
+  status          RewardStatus @default(AVAILABLE)
+  discountPercent Int?         @map("discount_percent")
+  category        String?
+  amount          Float?
+  reference       String?
+  expiresAt       DateTime?    @map("expires_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("rewards")
+}
+
 enum Roles {
   USER
   ADMIN
+}
+
+enum AccountType {
+  STANDARD
+  INFLUENCER
+}
+
+enum ReferralStatus {
+  REGISTERED
+  COMPLETED
+}
+
+enum PointsSource {
+  REFERRAL
+  KILOMETERS
+  TIER
+}
+
+enum RewardType {
+  DISCOUNT_VOUCHER
+  COMMISSION
+}
+
+enum RewardStatus {
+  AVAILABLE
+  USED
+  EXPIRED
+  PAID
 }
 
 enum ActivitySource {
@@ -188,10 +309,38 @@ enum ActivityStatus {
   CANCELLED
 }
 
-enum TerrainType {
+enum TireUsageType {
   ROAD
-  TRAIL
   GRAVEL
-  MIXED
-  UNKNOWN
+  MTB
+  CITY
+  TOURING
+  COMMUTING
+  E_BIKE
+}
+
+enum RimType {
+  CLINCHER
+  TUBELESS
+  TUBULAR
+}
+
+enum SealingType {
+  TUBE
+  TUBELESS_READY
+  TUBELESS
+}
+
+enum TireFitting {
+  FRONT
+  REAR
+  FRONT_REAR
+}
+
+enum TirePerformanceProfile {
+  COMFORT
+  SPEED
+  GRIP
+  DURABILITY
+  PUNCTURE_PROTECTION
 }

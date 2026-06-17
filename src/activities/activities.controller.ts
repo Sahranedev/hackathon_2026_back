@@ -49,11 +49,7 @@ export class ActivitiesController {
   ) {
     const userId = req.user.id;
 
-    return this.activitiesService.finishActivity(
-      userId,
-      id,
-      finishActivityDto,
-    );
+    return this.activitiesService.finishActivity(userId, id, finishActivityDto);
   }
 
   @Post(':id/cancel')

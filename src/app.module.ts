@@ -13,6 +13,11 @@ import { TiresModule } from './tires/tires.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TireSensorModule } from './tire-sensor/tire-sensor.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { LoyaltyModule } from './loyalty/loyalty.module';
+import { RewardsModule } from './rewards/rewards.module';
+import { ReferralsModule } from './referrals/referrals.module';
+import { InfluencerModule } from './influencer/influencer.module';
 
 @Module({
   imports: [
@@ -26,6 +31,11 @@ import { TireSensorModule } from './tire-sensor/tire-sensor.module';
     AlertsModule,
     TireSensorModule,
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    LoyaltyModule,
+    RewardsModule,
+    ReferralsModule,
+    InfluencerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

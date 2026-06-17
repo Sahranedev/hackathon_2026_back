@@ -10,20 +10,24 @@ export class PressureLowRule implements TireRule {
   code = 'PRESSURE';
 
   async evaluate(ctx: RuleContext, tire: TireData): Promise<Alert | null> {
-    if (tire?.maxPressure && 5 > tire?.maxPressure) {
+    const currentPressure = 5;
+
+    if (tire?.maxPressure && currentPressure > tire.maxPressure) {
+      const message = `Pression actuelle de ${currentPressure} bar, supérieure à la limite maximale recommandée de ${tire.maxPressure} bar`;
       const alert = await this.alertPersistence.createAlert(
         ctx.tire.id,
         this.code,
-        'Pressure supérieure au maximum recommandé',
+        message,
       );
       if (alert) {
         return alert;
       }
-    } else if (tire?.minPressure && 5 < tire?.minPressure) {
+    } else if (tire?.minPressure && currentPressure < tire.minPressure) {
+      const message = `Pression actuelle de ${currentPressure} bar, inférieure à la limite minimale recommandée de ${tire.minPressure} bar`;
       const alert = await this.alertPersistence.createAlert(
         ctx.tire.id,
         this.code,
-        'Pressure inférieure au minimum recommandé',
+        message,
       );
       if (alert) {
         return alert;

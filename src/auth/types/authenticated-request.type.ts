@@ -1,5 +1,7 @@
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { SafeUser } from '../../users/types/safe-user.type';
 
-export interface AuthenticatedUser {
-  user?: JwtPayload;
+export type AuthenticatedUser = SafeUser;
+
+export interface AuthenticatedRequest {
+  user: SafeUser;
 }

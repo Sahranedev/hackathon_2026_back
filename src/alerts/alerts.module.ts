@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { TiresModule } from 'src/tires/tires.module';
 import { AlertPersistenceService } from './alert-persistence.service';
 import { AlertsController } from './alerts.controller';
 import { AlertsService } from './alerts.service';
@@ -12,7 +13,7 @@ import { TerrainRule } from './rules/terrain.rule';
 const ruleProviders = [PressureLowRule, TerrainRule, PressureKilometersRule];
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, TiresModule],
   controllers: [AlertsController],
   providers: [
     AlertPersistenceService,

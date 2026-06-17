@@ -10,15 +10,16 @@ export class PressureKilometersRule implements TireRule {
   code = 'PRESSURE_KILOMETERS';
 
   async evaluate(ctx: RuleContext, tire: TireData): Promise<Alert | null> {
-    console.log((ctx.tire.kilometers, tire.maxKilometers));
-    if (ctx.tire.kilometers && ctx.tire.kilometers > tire.maxKilometers) {
-      console.log(
-        `Kilometers ${ctx.tire.kilometers} supérieure au maximum recommandé`,
-      );
+    if (
+      ctx.tire.kilometers != null &&
+      ctx.tire.kilometers > tire.maxKilometers
+    ) {
+      const exceeded = ctx.tire.kilometers - tire.maxKilometers;
+      const message = `Vous avez parcouru ${ctx.tire.kilometers} km, soit ${exceeded} km au-delà de la limite recommandée de ${tire.maxKilometers} km`;
       const alert = await this.alertPersistence.createAlert(
         ctx.tire.id,
         this.code,
-        'Kilometers inférieure au maximum recommandé',
+        message,
       );
 
       if (alert) {

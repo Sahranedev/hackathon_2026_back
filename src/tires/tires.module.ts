@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { TireRecommendationService } from './tire-recommendation.service';
 import { TiresController } from './tires.controller';
 import { TiresService } from './tires.service';
 import { UserTiresService } from './user-tires.service';
@@ -9,5 +10,7 @@ import { UserTiresService } from './user-tires.service';
   controllers: [TiresController],
   providers: [TiresService, UserTiresService],
   exports: [TiresService, UserTiresService],
+  providers: [TiresService, TireRecommendationService],
+  exports: [TireRecommendationService],,
 })
 export class TiresModule {}
