@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AlertPersistenceService } from 'src/alerts/alert-persistence.service';
 import { TireData, TireSensorReading } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AlertMetadata } from 'src/types/alerts.type';
 import { CreateTireSensorReadingDto } from 'src/tire-sensor/dto/create-tire-sensor-reading.dto';
 import { TiresService } from 'src/tires/tires.service';
 import {
@@ -9,6 +10,14 @@ import {
   UserTireWithProduct,
 } from 'src/tires/user-tires.service';
 import { TireHealthAnalysisResult } from './types/tire-health-analysis-result';
+
+const SLOW_LEAK_ALERT_TYPE = 'SLOW_LEAK_SUSPECTED';
+const SLOW_LEAK_RECHECK_INTERVAL = 3;
+
+type SlowLeakState = {
+  analysis: TireHealthAnalysisResult | null;
+  alertCreated: boolean;
+};
 
 @Injectable()
 export class TireHealthService {
@@ -32,30 +41,39 @@ export class TireHealthService {
     const measuredAt = reading.measuredAt
       ? new Date(reading.measuredAt)
       : new Date();
-    const previousReadings = await this.findPreviousReadings(
-      reading.deviceId,
+
+    const currentReading = await this.saveReading(
+      userTire.id,
+      reading,
       measuredAt,
     );
-    const analysis = this.computeAnalysis(
-      reading,
-      tireProduct,
-      previousReadings,
+    const latestReadings = await this.findLatestReadings(reading.deviceId);
+    const readingCount = await this.countReadings(reading.deviceId);
+    const slowLeakState = await this.handleSlowLeakState(
+      userTire.id,
+      latestReadings,
+      readingCount,
     );
-    let alertCreated = false;
+    const analysis =
+      slowLeakState.analysis ??
+      this.computePressureAnalysis(tireProduct, latestReadings);
+    let alertCreated = slowLeakState.alertCreated;
 
-    if (analysis.shouldCreateAlert && analysis.alertType) {
+    if (
+      !slowLeakState.analysis &&
+      analysis.shouldCreateAlert &&
+      analysis.alertType
+    ) {
       alertCreated = await this.createAlertFromAnalysis(userTire.id, analysis);
     }
 
-    await this.saveReading(userTire.id, reading, measuredAt);
-
     return {
-      deviceId: reading.deviceId,
+      deviceId: currentReading.deviceId,
       userTireId: userTire.id,
       tireProductName: tireProduct.model,
-      pressureBar: reading.pressureBar,
-      temperatureC: reading.temperatureC,
-      measuredAt: measuredAt.toISOString(),
+      pressureBar: currentReading.pressureBar,
+      temperatureC: currentReading.temperatureC,
+      measuredAt: currentReading.measuredAt.toISOString(),
       status: analysis.status,
       alertType: analysis.alertType,
       severity: analysis.severity,
@@ -85,34 +103,22 @@ export class TireHealthService {
     return tireProduct;
   }
 
-  private computeAnalysis(
-    reading: CreateTireSensorReadingDto,
+  private computePressureAnalysis(
     tireProduct: TireData,
-    previousReadings: TireSensorReading[],
+    latestReadings: TireSensorReading[],
   ): TireHealthAnalysisResult {
-    const pressure = reading.pressureBar;
+    const currentReading = latestReadings[0];
 
-    if (previousReadings.length > 0) {
-      const slowLeakAnalysis = this.computeSlowLeakAnalysis(
-        reading,
-        previousReadings,
-      );
-
-      if (slowLeakAnalysis) {
-        return slowLeakAnalysis;
-      }
-
-      const abnormalDropAnalysis = this.computeAbnormalPressureDropAnalysis(
-        reading,
-        previousReadings[0],
-      );
+    if (latestReadings.length > 1) {
+      const abnormalDropAnalysis =
+        this.computeAbnormalPressureDropAnalysis(latestReadings);
 
       if (abnormalDropAnalysis) {
         return abnormalDropAnalysis;
       }
     }
 
-    if (pressure < tireProduct.minPressure) {
+    if (currentReading.pressureBar < tireProduct.minPressure) {
       return {
         status: 'warning',
         shouldCreateAlert: true,
@@ -124,7 +130,7 @@ export class TireHealthService {
       };
     }
 
-    if (pressure > tireProduct.maxPressure) {
+    if (currentReading.pressureBar > tireProduct.maxPressure) {
       return {
         status: 'warning',
         shouldCreateAlert: true,
@@ -146,22 +152,99 @@ export class TireHealthService {
     };
   }
 
-  private computeSlowLeakAnalysis(
-    reading: CreateTireSensorReadingDto,
-    previousReadings: TireSensorReading[],
-  ): TireHealthAnalysisResult | null {
-    if (previousReadings.length < 2) {
-      return null;
+  private async handleSlowLeakState(
+    userTireId: number,
+    latestReadings: TireSensorReading[],
+    readingCount: number,
+  ): Promise<SlowLeakState> {
+    const activeSlowLeakAlert =
+      await this.alertPersistenceService.findActiveAlert(
+        userTireId,
+        SLOW_LEAK_ALERT_TYPE,
+      );
+
+    if (activeSlowLeakAlert) {
+      const metadata = activeSlowLeakAlert.metadata ?? {};
+      const lastCheckedReadingCount =
+        metadata.slowLeak?.lastCheckedReadingCount;
+
+      if (typeof lastCheckedReadingCount !== 'number') {
+        await this.updateSlowLeakAlertMetadata(
+          activeSlowLeakAlert.id,
+          metadata,
+          readingCount,
+        );
+
+        return {
+          analysis: this.buildSlowLeakAnalysis(),
+          alertCreated: false,
+        };
+      }
+
+      const shouldRecheck =
+        readingCount - lastCheckedReadingCount >= SLOW_LEAK_RECHECK_INTERVAL;
+
+      if (!shouldRecheck) {
+        return {
+          analysis: this.buildSlowLeakAnalysis(),
+          alertCreated: false,
+        };
+      }
+
+      if (this.isSlowLeakConfirmed(latestReadings)) {
+        await this.updateSlowLeakAlertMetadata(
+          activeSlowLeakAlert.id,
+          metadata,
+          readingCount,
+        );
+
+        return {
+          analysis: this.buildSlowLeakAnalysis(),
+          alertCreated: false,
+        };
+      }
+
+      await this.alertPersistenceService.deleteActiveAlert(
+        userTireId,
+        SLOW_LEAK_ALERT_TYPE,
+      );
+
+      return {
+        analysis: null,
+        alertCreated: false,
+      };
     }
 
-    const lastThreeReadings = [
-      previousReadings[1],
-      previousReadings[0],
+    if (!this.isSlowLeakConfirmed(latestReadings)) {
+      return {
+        analysis: null,
+        alertCreated: false,
+      };
+    }
+
+    const analysis = this.buildSlowLeakAnalysis();
+    const alertCreated = await this.createAlertFromAnalysis(
+      userTireId,
+      analysis,
       {
-        pressureBar: reading.pressureBar,
-        temperatureC: reading.temperatureC,
+        slowLeak: {
+          lastCheckedReadingCount: readingCount,
+        },
       },
-    ];
+    );
+
+    return {
+      analysis,
+      alertCreated,
+    };
+  }
+
+  private isSlowLeakConfirmed(latestReadings: TireSensorReading[]): boolean {
+    if (latestReadings.length < 3) {
+      return false;
+    }
+
+    const lastThreeReadings = [...latestReadings].reverse();
     const [oldestReading, middleReading, currentReading] = lastThreeReadings;
     const pressureIsDecreasing =
       oldestReading.pressureBar > middleReading.pressureBar &&
@@ -174,32 +257,33 @@ export class TireHealthService {
     const temperatureVariation =
       Math.max(...temperatures) - Math.min(...temperatures);
 
-    if (
+    return (
       pressureIsDecreasing &&
       totalPressureDrop >= 0.8 &&
       temperatureVariation <= 5
-    ) {
-      return {
-        status: 'critical',
-        shouldCreateAlert: true,
-        alertType: 'SLOW_LEAK_SUSPECTED',
-        severity: 'critical',
-        message: 'Suspicion de crevaison lente détectée sur plusieurs mesures.',
-        recommendedAction:
-          'Contrôler le pneu et rechercher une fuite avant de rouler.',
-      };
-    }
+    );
+  }
 
-    return null;
+  private buildSlowLeakAnalysis(): TireHealthAnalysisResult {
+    return {
+      status: 'critical',
+      shouldCreateAlert: true,
+      alertType: SLOW_LEAK_ALERT_TYPE,
+      severity: 'critical',
+      message: 'Suspicion de crevaison lente détectée sur plusieurs mesures.',
+      recommendedAction:
+        'Contrôler le pneu et rechercher une fuite avant de rouler.',
+    };
   }
 
   private computeAbnormalPressureDropAnalysis(
-    reading: CreateTireSensorReadingDto,
-    previousReading: TireSensorReading,
+    latestReadings: TireSensorReading[],
   ): TireHealthAnalysisResult | null {
-    const pressureDrop = previousReading.pressureBar - reading.pressureBar;
+    const [currentReading, previousReading] = latestReadings;
+    const pressureDrop =
+      previousReading.pressureBar - currentReading.pressureBar;
     const temperatureVariation = Math.abs(
-      previousReading.temperatureC - reading.temperatureC,
+      previousReading.temperatureC - currentReading.temperatureC,
     );
 
     if (pressureDrop >= 0.5 && temperatureVariation <= 5) {
@@ -217,18 +301,21 @@ export class TireHealthService {
     return null;
   }
 
-  private findPreviousReadings(deviceId: string, measuredAt: Date) {
+  private findLatestReadings(deviceId: string) {
     return this.prisma.tireSensorReading.findMany({
       where: {
         deviceId,
-        measuredAt: {
-          lt: measuredAt,
-        },
       },
-      orderBy: {
-        measuredAt: 'desc',
+      orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
+      take: 3,
+    });
+  }
+
+  private countReadings(deviceId: string) {
+    return this.prisma.tireSensorReading.count({
+      where: {
+        deviceId,
       },
-      take: 2,
     });
   }
 
@@ -248,9 +335,24 @@ export class TireHealthService {
     });
   }
 
+  private updateSlowLeakAlertMetadata(
+    alertId: number,
+    metadata: AlertMetadata,
+    readingCount: number,
+  ) {
+    return this.alertPersistenceService.updateAlertMetadata(alertId, {
+      ...metadata,
+      slowLeak: {
+        ...metadata.slowLeak,
+        lastCheckedReadingCount: readingCount,
+      },
+    });
+  }
+
   private async createAlertFromAnalysis(
     userTireId: number,
     analysis: TireHealthAnalysisResult,
+    metadata?: AlertMetadata,
   ): Promise<boolean> {
     if (!analysis.alertType) {
       return false;
@@ -269,6 +371,7 @@ export class TireHealthService {
       userTireId,
       analysis.alertType,
       `${this.getAlertTitle(analysis.alertType)} - ${analysis.message} ${analysis.recommendedAction}`,
+      metadata,
     );
 
     return true;
