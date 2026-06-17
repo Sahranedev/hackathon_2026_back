@@ -22,7 +22,8 @@ export class AlertPersistenceService {
     if (existingAlert) {
       if (
         existingAlert.message === message &&
-        JSON.stringify(existingAlert.metadata) === JSON.stringify(metadata ?? null)
+        JSON.stringify(existingAlert.metadata) ===
+          JSON.stringify(metadata ?? null)
       ) {
         return this.toAlert(existingAlert);
       }

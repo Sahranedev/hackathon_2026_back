@@ -90,23 +90,23 @@ model UserTire {
 }
 
 model Activity {
-  id               Int                @id @default(autoincrement())
-  userId           Int                @map("user_id")
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stravaActivityId BigInt?            @map("strava_activity_id")
-  name             String?
-  source           ActivitySource
-  status           ActivityStatus     @default(COMPLETED)
-  startPosition    Int?               @map("start_position")
-  kilometers       Float?
-  durationSeconds  Int?               @map("duration_seconds")
-  terrainType      TerrainType        @default(UNKNOWN) @map("terrain_type")
-  startedAt        DateTime?          @map("started_at")
-  endedAt          DateTime?          @map("ended_at")
-  date             DateTime?          @db.Date
-  rewardedKilometers Float            @default(0) @map("rewarded_kilometers")
-  tires            ActivityTire[]
-  gpsPoints        ActivityGpsPoint[]
+  id                 Int                @id @default(autoincrement())
+  userId             Int                @map("user_id")
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stravaActivityId   BigInt?            @map("strava_activity_id")
+  name               String?
+  source             ActivitySource
+  status             ActivityStatus     @default(COMPLETED)
+  startPosition      Int?               @map("start_position")
+  kilometers         Float?
+  durationSeconds    Int?               @map("duration_seconds")
+  terrainType        TerrainType        @default(UNKNOWN) @map("terrain_type")
+  startedAt          DateTime?          @map("started_at")
+  endedAt            DateTime?          @map("ended_at")
+  date               DateTime?          @db.Date
+  rewardedKilometers Float              @default(0) @map("rewarded_kilometers")
+  tires              ActivityTire[]
+  gpsPoints          ActivityGpsPoint[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -137,11 +137,12 @@ model ActivityGpsPoint {
 }
 
 model Alert {
-  id         Int     @id @default(autoincrement())
-  userTireId Int     @map("user_tire_id")
+  id         Int      @id @default(autoincrement())
+  userTireId Int      @map("user_tire_id")
   code       String
-  isChecked  Boolean @default(false)
+  isChecked  Boolean  @default(false)
   message    String
+  createdAt  DateTime @default(now()) @map("created_at")
   metadata   Json?
 
   userTire UserTire? @relation(fields: [userTireId], references: [id])
@@ -162,25 +163,25 @@ model Retail {
 }
 
 model TireData {
-  id            Int           @id @default(autoincrement())
-  model         String
-  terrainTypes  TerrainType[]
+  id           Int           @id @default(autoincrement())
+  model        String
+  terrainTypes TerrainType[]
 
   usageType     TireUsageType?
-  wheelDiameter String?       @map("wheel_diameter")
-  etrtoDiameter Int?          @map("etrto_diameter")
-  etrtoWidth    Int?          @map("etrto_width")
+  wheelDiameter String?        @map("wheel_diameter")
+  etrtoDiameter Int?           @map("etrto_diameter")
+  etrtoWidth    Int?           @map("etrto_width")
 
-  rimType       RimType?      @map("rim_type")
-  sealingType   SealingType?  @map("sealing_type")
-  fitting       TireFitting?  @map("fitting")
+  rimType     RimType?     @map("rim_type")
+  sealingType SealingType? @map("sealing_type")
+  fitting     TireFitting? @map("fitting")
 
   eBikeCompatible Boolean @default(false) @map("e_bike_compatible")
 
   performanceProfiles TirePerformanceProfile[] @map("performance_profiles")
 
-  familyName    String? @map("family_name")
-  productRange  String? @map("product_range")
+  familyName   String? @map("family_name")
+  productRange String? @map("product_range")
 
   recommendationWeight Int @default(0) @map("recommendation_weight")
 

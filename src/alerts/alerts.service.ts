@@ -54,6 +54,8 @@ export class AlertsService {
         isChecked: true,
         metadata: true,
       },
+      orderBy: { id: 'desc' },
+      take: 3,
     });
 
     return alerts.map((alert) => ({
@@ -72,6 +74,8 @@ export class AlertsService {
         isChecked: true,
         metadata: true,
       },
+      orderBy: { id: 'desc' },
+      take: 3,
     });
 
     return alerts.map((alert) => ({
