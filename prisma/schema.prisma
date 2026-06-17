@@ -161,15 +161,47 @@ model Retail {
 }
 
 model TireData {
-  id            Int        @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   model         String
-  terrainTypes  String[]
+  terrainTypes  TerrainType[]
+
+  usageType     TireUsageType?
+  wheelDiameter String?       @map("wheel_diameter")
+  etrtoDiameter Int?          @map("etrto_diameter")
+  etrtoWidth    Int?          @map("etrto_width")
+
+  rimType       RimType?      @map("rim_type")
+  sealingType   SealingType?  @map("sealing_type")
+  fitting       TireFitting?  @map("fitting")
+
+  eBikeCompatible Boolean @default(false) @map("e_bike_compatible")
+
+  performanceProfiles TirePerformanceProfile[] @map("performance_profiles")
+
+  familyName    String? @map("family_name")
+  productRange  String? @map("product_range")
+
+  recommendationWeight Int @default(0) @map("recommendation_weight")
+
   minPressure   Float
   maxPressure   Float
   maxKilometers Int
   userTires     UserTire[]
 
   @@map("tire_data")
+}
+
+enum TerrainType {
+  ASPHALT
+  HARD_PACKED
+  MIXED
+  GRAVEL
+  ROCKY
+  MUD
+  SOFT
+  SAND
+  WET
+  UNKNOWN
 }
 
 model ActivityTire {
@@ -276,10 +308,38 @@ enum ActivityStatus {
   CANCELLED
 }
 
-enum TerrainType {
+enum TireUsageType {
   ROAD
-  TRAIL
   GRAVEL
-  MIXED
-  UNKNOWN
+  MTB
+  CITY
+  TOURING
+  COMMUTING
+  E_BIKE
+}
+
+enum RimType {
+  CLINCHER
+  TUBELESS
+  TUBULAR
+}
+
+enum SealingType {
+  TUBE
+  TUBELESS_READY
+  TUBELESS
+}
+
+enum TireFitting {
+  FRONT
+  REAR
+  FRONT_REAR
+}
+
+enum TirePerformanceProfile {
+  COMFORT
+  SPEED
+  GRIP
+  DURABILITY
+  PUNCTURE_PROTECTION
 }

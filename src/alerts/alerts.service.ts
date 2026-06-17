@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TireRule, TIRE_RULES } from './interface/tire-rule.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Alert } from 'src/types/alerts.type';
+import { UserTire } from 'src/generated/prisma/client';
 
 @Injectable()
 export class AlertsService {
@@ -10,17 +11,18 @@ export class AlertsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async generateAlerts(tireId: number): Promise<Alert[]> {
-    const userTire = await this.prisma.userTire.findUnique({
-      where: { id: tireId },
-      include: { tire: true },
-    });
-
-    if (!userTire?.tire) {
-      throw new Error('Tire not found');
+  async generateAlerts(userTire: UserTire): Promise<Alert[]> {
+    if (!userTire.id || !userTire.tireId) {
+      throw new Error('User tire not found');
     }
 
-    const tireData = userTire.tire;
+    const tireData = await this.prisma.tireData.findUnique({
+      where: { id: userTire.tireId },
+    });
+
+    if (!tireData) {
+      throw new Error('Tire data not found');
+    }
 
     const alerts = (
       await Promise.all(
@@ -33,14 +35,39 @@ export class AlertsService {
   }
 
   async generateAllAlerts(): Promise<void> {
-    console.log('Generating all alerts');
     const userTires = await this.prisma.userTire.findMany({
       where: { tireId: { not: null } },
-      select: { id: true },
     });
 
     await Promise.all(
-      userTires.map((userTire) => this.generateAlerts(userTire.id)),
+      userTires.map((userTire) => this.generateAlerts(userTire)),
     );
+  }
+
+  async getUserAlerts(userId: number): Promise<Alert[]> {
+    const alerts = await this.prisma.alert.findMany({
+      where: { userTire: { userId } },
+      select: { id: true, code: true, message: true, isChecked: true },
+    });
+
+    return alerts;
+  }
+
+  async getTireAlerts(tireId: number): Promise<Alert[]> {
+    const alerts = await this.prisma.alert.findMany({
+      where: { userTire: { tireId } },
+      select: { id: true, code: true, message: true, isChecked: true },
+    });
+
+    return alerts;
+  }
+
+  async checkAlert(userId: number, alertId: number): Promise<Alert> {
+    const alert = await this.prisma.alert.update({
+      where: { id: alertId, userTire: { userId } },
+      data: { isChecked: true },
+    });
+
+    return alert;
   }
 }

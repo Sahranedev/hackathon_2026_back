@@ -16,7 +16,14 @@ export class AlertPersistenceService {
     });
 
     if (existingAlert) {
-      return existingAlert;
+      if (existingAlert.message === message) {
+        return existingAlert;
+      }
+
+      return this.prisma.alert.update({
+        where: { id: existingAlert.id },
+        data: { message },
+      });
     }
 
     return this.prisma.alert.create({

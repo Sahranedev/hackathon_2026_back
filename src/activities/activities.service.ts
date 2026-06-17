@@ -438,10 +438,10 @@ export class ActivitiesService {
         return TerrainType.GRAVEL;
       case 'MountainBikeRide':
       case 'EMountainBikeRide':
-        return TerrainType.TRAIL;
+        return TerrainType.MIXED;
       case 'Ride':
       case 'EBikeRide':
-        return TerrainType.ROAD;
+        return TerrainType.ASPHALT;
       default:
         return TerrainType.UNKNOWN;
     }
