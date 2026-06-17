@@ -23,6 +23,18 @@ export class ActivitiesController {
     return this.activitiesService.findAll(userId);
   }
 
+  @Get('terrain-types')
+  getTerrainTypes() {
+    return this.activitiesService.getTerrainTypes();
+  }
+
+  @Get(':id')
+  async findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const userId = req.user.id;
+
+    return this.activitiesService.findOne(userId, id);
+  }
+
   @Post('start')
   async start(@Req() req: any, @Body() startActivityDto: StartActivityDto) {
     const userId = req.user.id;

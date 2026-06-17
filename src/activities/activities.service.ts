@@ -70,6 +70,59 @@ export class ActivitiesService {
     return activities.map((activity) => this.serializeActivity(activity));
   }
 
+  async findOne(userId: number, activityId: number) {
+    const activity = await this.prisma.activity.findFirst({
+      where: {
+        id: activityId,
+        userId,
+      },
+      include: {
+        tires: {
+          include: {
+            tire: {
+              include: {
+                tire: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!activity) {
+      throw new NotFoundException(`Activity ${activityId} not found`);
+    }
+
+    return {
+      ...this.serializeActivity(activity),
+      tires: activity.tires.map((activityTire) => ({
+        userTireId: activityTire.tire.id,
+        name: activityTire.tire.tire?.model ?? 'Pneu',
+        position: activityTire.tire.position ?? null,
+      })),
+    };
+  }
+
+  getTerrainTypes(): { value: TerrainType; label: string }[] {
+    const labels: Record<TerrainType, string> = {
+      ASPHALT: 'Asphalte',
+      HARD_PACKED: 'Terrain dur compacté',
+      MIXED: 'Mixte',
+      GRAVEL: 'Gravier',
+      ROCKY: 'Rocheux',
+      MUD: 'Boueux',
+      SOFT: 'Meuble',
+      SAND: 'Sableux',
+      WET: 'Humide',
+      UNKNOWN: 'Inconnu',
+    };
+
+    return Object.values(TerrainType).map((value) => ({
+      value,
+      label: labels[value],
+    }));
+  }
+
   private serializeActivity(activity: Activity) {
     return {
       ...activity,
