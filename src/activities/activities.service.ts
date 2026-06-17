@@ -19,6 +19,8 @@ import { AddGpsPointDto } from './dto/add-gps-point.dto';
 import { FinishActivityDto } from './dto/finish-activity.dto';
 import { StartActivityDto } from './dto/start-activity.dto';
 import { StravaActivity } from './types/strava-activity.type';
+import { formatTerrainLabel } from '../alerts/utils/terrain-labels';
+import { ActivityDetail } from '../types/activity-detail.type';
 
 type ActivityWithGpsPoints = Activity & {
   gpsPoints: ActivityGpsPoint[];
@@ -70,6 +72,53 @@ export class ActivitiesService {
     return activities.map((activity) => this.serializeActivity(activity));
   }
 
+  async findOne(userId: number, activityId: number): Promise<ActivityDetail> {
+    const activity = await this.prisma.activity.findFirst({
+      where: {
+        id: activityId,
+        userId,
+        status: {
+          not: 'CANCELLED',
+        },
+      },
+      include: {
+        tires: {
+          include: {
+            tire: {
+              include: {
+                tire: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!activity) {
+      throw new NotFoundException(`Activity ${activityId} not found`);
+    }
+
+    return {
+      ...this.serializeActivityDates(activity),
+      tires: activity.tires.map((activityTire) => ({
+        userTireId: activityTire.tireId,
+        name: activityTire.tire.tire?.model ?? 'Pneu inconnu',
+        position: activityTire.tire.position,
+      })),
+    };
+  }
+
+  private serializeActivityDates(activity: Activity): Omit<ActivityDetail, 'tires'> {
+    return {
+      ...this.serializeActivity(activity),
+      startedAt: activity.startedAt?.toISOString() ?? null,
+      endedAt: activity.endedAt?.toISOString() ?? null,
+      date: activity.date?.toISOString() ?? null,
+      createdAt: activity.createdAt.toISOString(),
+      updatedAt: activity.updatedAt.toISOString(),
+    };
+  }
+
   private serializeActivity(activity: Activity) {
     return {
       ...activity,
@@ -83,6 +132,17 @@ export class ActivitiesService {
     return this.prisma.stravaAccount.findUnique({
       where: {
         userId,
+      },
+    });
+  }
+
+  private async findActiveUserTiresForUser(userId: number) {
+    return this.prisma.userTire.findMany({
+      where: {
+        userId,
+        isActive: {
+          equals: true,
+        },
       },
     });
   }
@@ -104,6 +164,8 @@ export class ActivitiesService {
       ? new Date(startActivityDto.startedAt)
       : new Date();
 
+    const activeUserTires = await this.findActiveUserTiresForUser(userId);
+
     const activity = await this.prisma.activity.create({
       data: {
         userId,
@@ -113,10 +175,33 @@ export class ActivitiesService {
         terrainType: startActivityDto.terrainType ?? TerrainType.UNKNOWN,
         startedAt,
         date: startedAt,
+        ...(activeUserTires.length > 0
+          ? {
+              tires: {
+                create: activeUserTires.map((userTire) => ({
+                  tire: {
+                    connect: {
+                      id: userTire.id,
+                    },
+                  },
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        tires: true,
       },
     });
 
     return this.serializeActivity(activity);
+  }
+
+  getTerrainTypes() {
+    return Object.values(TerrainType).map((value) => ({
+      value,
+      label: formatTerrainLabel(value),
+    }));
   }
 
   async addGpsPoint(
@@ -192,27 +277,34 @@ export class ActivitiesService {
     return this.serializeActivity(updatedActivity);
   }
 
-  async cancelActivity(userId: number, activityId: number) {
+  async deleteActivity(userId: number, activityId: number) {
     const activity = await this.findAppTrackedActivityForUser(
       userId,
       activityId,
     );
 
     if (activity.status !== 'IN_PROGRESS') {
-      throw new BadRequestException("L'activité n'est pas en cours.");
+      throw new BadRequestException(
+        "Seules les activités en cours peuvent être supprimées.",
+      );
     }
 
-    const cancelledActivity = await this.prisma.activity.update({
-      where: {
-        id: activityId,
-      },
-      data: {
-        status: 'CANCELLED',
-        endedAt: new Date(),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.activityTire.deleteMany({
+        where: {
+          activityId,
+        },
+      }),
+      this.prisma.activity.delete({
+        where: {
+          id: activityId,
+        },
+      }),
+    ]);
 
-    return this.serializeActivity(cancelledActivity);
+    return {
+      deleted: true,
+    };
   }
 
   private async findAppTrackedActivityForUser(

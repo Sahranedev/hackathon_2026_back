@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -30,6 +31,18 @@ export class ActivitiesController {
     return this.activitiesService.startActivity(userId, startActivityDto);
   }
 
+  @Get('terrain-types')
+  getTerrainTypes() {
+    return this.activitiesService.getTerrainTypes();
+  }
+
+  @Get(':id')
+  async findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const userId = req.user.id;
+
+    return this.activitiesService.findOne(userId, id);
+  }
+
   @Post(':id/points')
   async addGpsPoint(
     @Req() req: any,
@@ -52,10 +65,10 @@ export class ActivitiesController {
     return this.activitiesService.finishActivity(userId, id, finishActivityDto);
   }
 
-  @Post(':id/cancel')
-  async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+  @Delete(':id')
+  async delete(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     const userId = req.user.id;
 
-    return this.activitiesService.cancelActivity(userId, id);
+    return this.activitiesService.deleteActivity(userId, id);
   }
 }
