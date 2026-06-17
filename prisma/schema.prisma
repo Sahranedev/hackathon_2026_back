@@ -86,8 +86,25 @@ model UserTire {
   user          User?          @relation(fields: [userId], references: [id])
   activityTires ActivityTire[]
   alerts        Alert[]
+  sensorReadings TireSensorReading[]
 
   @@map("users_tire")
+}
+
+model TireSensorReading {
+  id           Int      @id @default(autoincrement())
+  deviceId     String   @map("device_id")
+  userTireId   Int      @map("user_tire_id")
+  pressureBar  Float    @map("pressure_bar")
+  temperatureC Float    @map("temperature_c")
+  measuredAt   DateTime @map("measured_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  userTire UserTire @relation(fields: [userTireId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, measuredAt])
+  @@index([userTireId])
+  @@map("tire_sensor_readings")
 }
 
 model Activity {

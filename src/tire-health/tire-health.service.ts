@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AlertPersistenceService } from 'src/alerts/alert-persistence.service';
-import { TireData } from 'src/generated/prisma/client';
+import { TireData, TireSensorReading } from 'src/generated/prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTireSensorReadingDto } from 'src/tire-sensor/dto/create-tire-sensor-reading.dto';
 import { TiresService } from 'src/tires/tires.service';
 import {
@@ -15,6 +16,7 @@ export class TireHealthService {
     private readonly userTiresService: UserTiresService,
     private readonly tiresService: TiresService,
     private readonly alertPersistenceService: AlertPersistenceService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async analyzeSensorReading(reading: CreateTireSensorReadingDto) {
@@ -27,12 +29,25 @@ export class TireHealthService {
     }
 
     const tireProduct = await this.getTireProduct(userTire);
-    const analysis = this.computeAnalysis(reading, tireProduct);
+    const measuredAt = reading.measuredAt
+      ? new Date(reading.measuredAt)
+      : new Date();
+    const previousReadings = await this.findPreviousReadings(
+      reading.deviceId,
+      measuredAt,
+    );
+    const analysis = this.computeAnalysis(
+      reading,
+      tireProduct,
+      previousReadings,
+    );
     let alertCreated = false;
 
     if (analysis.shouldCreateAlert && analysis.alertType) {
       alertCreated = await this.createAlertFromAnalysis(userTire.id, analysis);
     }
+
+    await this.saveReading(userTire.id, reading, measuredAt);
 
     return {
       deviceId: reading.deviceId,
@@ -40,7 +55,7 @@ export class TireHealthService {
       tireProductName: tireProduct.model,
       pressureBar: reading.pressureBar,
       temperatureC: reading.temperatureC,
-      measuredAt: reading.measuredAt ?? null,
+      measuredAt: measuredAt.toISOString(),
       status: analysis.status,
       alertType: analysis.alertType,
       severity: analysis.severity,
@@ -73,22 +88,39 @@ export class TireHealthService {
   private computeAnalysis(
     reading: CreateTireSensorReadingDto,
     tireProduct: TireData,
+    previousReadings: TireSensorReading[],
   ): TireHealthAnalysisResult {
     const pressure = reading.pressureBar;
-    const temperature = reading.temperatureC;
+
+    if (previousReadings.length > 0) {
+      const slowLeakAnalysis = this.computeSlowLeakAnalysis(
+        reading,
+        previousReadings,
+      );
+
+      if (slowLeakAnalysis) {
+        return slowLeakAnalysis;
+      }
+
+      const abnormalDropAnalysis = this.computeAbnormalPressureDropAnalysis(
+        reading,
+        previousReadings[0],
+      );
+
+      if (abnormalDropAnalysis) {
+        return abnormalDropAnalysis;
+      }
+    }
 
     if (pressure < tireProduct.minPressure) {
-      const gap = tireProduct.minPressure - pressure;
-      const severity = gap >= 0.5 ? 'critical' : 'warning';
-
       return {
-        status: severity,
+        status: 'warning',
         shouldCreateAlert: true,
         alertType: 'PRESSURE_TOO_LOW',
-        severity,
+        severity: 'warning',
         message:
           'La pression du pneu est inférieure à la recommandation Michelin.',
-        recommendedAction: 'Regonfler le pneu avant la prochaine sortie.',
+        recommendedAction: 'Regonfler le pneu',
       };
     }
 
@@ -104,17 +136,6 @@ export class TireHealthService {
       };
     }
 
-    if (temperature > 40) {
-      return {
-        status: 'warning',
-        shouldCreateAlert: true,
-        alertType: 'TEMPERATURE_HIGH',
-        severity: 'warning',
-        message: 'Température élevée détectée au niveau du pneu.',
-        recommendedAction: "Surveiller l'évolution du pneu après la sortie.",
-      };
-    }
-
     return {
       status: 'good',
       shouldCreateAlert: false,
@@ -123,6 +144,108 @@ export class TireHealthService {
       message: 'Pression conforme aux recommandations Michelin.',
       recommendedAction: 'Continuer le suivi.',
     };
+  }
+
+  private computeSlowLeakAnalysis(
+    reading: CreateTireSensorReadingDto,
+    previousReadings: TireSensorReading[],
+  ): TireHealthAnalysisResult | null {
+    if (previousReadings.length < 2) {
+      return null;
+    }
+
+    const lastThreeReadings = [
+      previousReadings[1],
+      previousReadings[0],
+      {
+        pressureBar: reading.pressureBar,
+        temperatureC: reading.temperatureC,
+      },
+    ];
+    const [oldestReading, middleReading, currentReading] = lastThreeReadings;
+    const pressureIsDecreasing =
+      oldestReading.pressureBar > middleReading.pressureBar &&
+      middleReading.pressureBar > currentReading.pressureBar;
+    const totalPressureDrop =
+      oldestReading.pressureBar - currentReading.pressureBar;
+    const temperatures = lastThreeReadings.map(
+      (sensorReading) => sensorReading.temperatureC,
+    );
+    const temperatureVariation =
+      Math.max(...temperatures) - Math.min(...temperatures);
+
+    if (
+      pressureIsDecreasing &&
+      totalPressureDrop >= 0.8 &&
+      temperatureVariation <= 5
+    ) {
+      return {
+        status: 'critical',
+        shouldCreateAlert: true,
+        alertType: 'SLOW_LEAK_SUSPECTED',
+        severity: 'critical',
+        message: 'Suspicion de crevaison lente détectée sur plusieurs mesures.',
+        recommendedAction:
+          'Contrôler le pneu et rechercher une fuite avant de rouler.',
+      };
+    }
+
+    return null;
+  }
+
+  private computeAbnormalPressureDropAnalysis(
+    reading: CreateTireSensorReadingDto,
+    previousReading: TireSensorReading,
+  ): TireHealthAnalysisResult | null {
+    const pressureDrop = previousReading.pressureBar - reading.pressureBar;
+    const temperatureVariation = Math.abs(
+      previousReading.temperatureC - reading.temperatureC,
+    );
+
+    if (pressureDrop >= 0.5 && temperatureVariation <= 5) {
+      return {
+        status: 'warning',
+        shouldCreateAlert: true,
+        alertType: 'ABNORMAL_PRESSURE_DROP',
+        severity: 'warning',
+        message: 'Baisse de pression anormale détectée entre deux mesures.',
+        recommendedAction:
+          "Contrôler la pression et vérifier l'évolution à la prochaine mesure.",
+      };
+    }
+
+    return null;
+  }
+
+  private findPreviousReadings(deviceId: string, measuredAt: Date) {
+    return this.prisma.tireSensorReading.findMany({
+      where: {
+        deviceId,
+        measuredAt: {
+          lt: measuredAt,
+        },
+      },
+      orderBy: {
+        measuredAt: 'desc',
+      },
+      take: 2,
+    });
+  }
+
+  private saveReading(
+    userTireId: number,
+    reading: CreateTireSensorReadingDto,
+    measuredAt: Date,
+  ) {
+    return this.prisma.tireSensorReading.create({
+      data: {
+        deviceId: reading.deviceId,
+        userTireId,
+        pressureBar: reading.pressureBar,
+        temperatureC: reading.temperatureC,
+        measuredAt,
+      },
+    });
   }
 
   private async createAlertFromAnalysis(
@@ -157,8 +280,10 @@ export class TireHealthService {
         return 'Pression trop basse';
       case 'PRESSURE_TOO_HIGH':
         return 'Pression trop élevée';
-      case 'TEMPERATURE_HIGH':
-        return 'Température élevée';
+      case 'ABNORMAL_PRESSURE_DROP':
+        return 'Baisse de pression anormale';
+      case 'SLOW_LEAK_SUSPECTED':
+        return 'Suspicion de crevaison lente';
       default:
         return 'Alerte pneu';
     }

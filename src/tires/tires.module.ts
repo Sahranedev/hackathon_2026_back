@@ -8,9 +8,7 @@ import { UserTiresService } from './user-tires.service';
 @Module({
   imports: [PrismaModule],
   controllers: [TiresController],
-  providers: [TiresService, UserTiresService],
-  exports: [TiresService, UserTiresService],
-  providers: [TiresService, TireRecommendationService],
-  exports: [TireRecommendationService],,
+  providers: [TiresService, UserTiresService, TireRecommendationService],
+  exports: [TiresService, UserTiresService, TireRecommendationService],
 })
 export class TiresModule {}
