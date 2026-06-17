@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { TireData } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
@@ -8,6 +9,14 @@ import { UserTireSummaryDto } from 'src/types/user-tire.type';
 export class TiresService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(tireId: number): Promise<TireData | null> {
+    return this.prisma.tireData.findUnique({
+      where: {
+        id: tireId,
+      },
+    });
+  }
+  
   async getUserTires(userId: number): Promise<UserTireSummaryDto[]> {
     const userTires = await this.prisma.userTire.findMany({
       where: { userId },

@@ -9,6 +9,9 @@ export type RecommendedTireSummary = {
 
 export type AlertMetadata = {
   recommendedTires?: RecommendedTireSummary[];
+  slowLeak?: {
+    lastCheckedReadingCount?: number;
+  };
 };
 
 export type Alert = {

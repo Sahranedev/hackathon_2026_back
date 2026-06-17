@@ -12,6 +12,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { TiresModule } from './tires/tires.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TireSensorModule } from './tire-sensor/tire-sensor.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { RewardsModule } from './rewards/rewards.module';
@@ -28,6 +29,7 @@ import { InfluencerModule } from './influencer/influencer.module';
     ActivitiesModule,
     TiresModule,
     AlertsModule,
+    TireSensorModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     LoyaltyModule,

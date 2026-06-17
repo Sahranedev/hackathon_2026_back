@@ -7,6 +7,17 @@ import { Alert, AlertMetadata } from 'src/types/alerts.type';
 export class AlertPersistenceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findActiveAlert(
+    userTireId: number,
+    code: string,
+  ): Promise<Alert | null> {
+    const alert = await this.prisma.alert.findFirst({
+      where: { userTireId, code, isChecked: false },
+    });
+
+    return alert ? this.toAlert(alert) : null;
+  }
+
   async createAlert(
     userTireId: number,
     code: string,
@@ -22,7 +33,8 @@ export class AlertPersistenceService {
     if (existingAlert) {
       if (
         existingAlert.message === message &&
-        JSON.stringify(existingAlert.metadata) === JSON.stringify(metadata ?? null)
+        JSON.stringify(existingAlert.metadata) ===
+          JSON.stringify(metadata ?? null)
       ) {
         return this.toAlert(existingAlert);
       }
@@ -43,6 +55,26 @@ export class AlertPersistenceService {
       },
     });
     return this.toAlert(created);
+  }
+
+  async updateAlertMetadata(
+    alertId: number,
+    metadata: AlertMetadata,
+  ): Promise<Alert> {
+    const updated = await this.prisma.alert.update({
+      where: { id: alertId },
+      data: { metadata: metadata as Prisma.InputJsonValue },
+    });
+
+    return this.toAlert(updated);
+  }
+
+  async deleteActiveAlert(userTireId: number, code: string): Promise<boolean> {
+    const result = await this.prisma.alert.deleteMany({
+      where: { userTireId, code, isChecked: false },
+    });
+
+    return result.count > 0;
   }
 
   private toAlert(alert: {
