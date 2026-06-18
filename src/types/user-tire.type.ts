@@ -23,3 +23,11 @@ export type UserTireInfoDto = {
   lastPressureBar: number | null;
   smartTire: boolean | null;
 };
+
+export type UserTireWearDto = {
+  id: number;
+  model: string;
+  position: string | null;
+  healthScore: number;
+  healthStatus: TireWearStatus;
+};

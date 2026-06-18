@@ -125,4 +125,77 @@ describe('TiresService', () => {
       'User tire not found',
     );
   });
+
+  it('returns model, position, and wear calculation for one user tire', async () => {
+    const prisma = {
+      userTire: {
+        findFirst: jest.fn(() =>
+          Promise.resolve({
+            id: 10,
+            position: 'front',
+            kilometers: 800,
+            tire: {
+              id: 1,
+              model: 'Michelin Front',
+              maxKilometers: 3000,
+            },
+          }),
+        ),
+      },
+    };
+    const tireWearService = {
+      getUserTireWearSnapshot: jest.fn(() =>
+        Promise.resolve({
+          userTireId: 10,
+          tireProductName: 'Michelin Front',
+          healthScore: 85,
+          healthStatus: 'good',
+          healthDetails: {
+            mileageKm: 800,
+            mileagePenalty: 15,
+            underInflatedCount: 0,
+            underInflationPenalty: 0,
+            usagePenalty: 0,
+          },
+          alertType: null,
+          alertCreated: false,
+          alertCleared: false,
+        }),
+      ),
+    };
+    const service = new TiresService(prisma as any, tireWearService as any);
+
+    const result = await service.getUserTireWear(1, 10);
+
+    expect(prisma.userTire.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 10,
+        userId: 1,
+      },
+      include: {
+        tire: true,
+      },
+    });
+    expect(tireWearService.getUserTireWearSnapshot).toHaveBeenCalledWith(10);
+    expect(result).toEqual({
+      id: 10,
+      model: 'Michelin Front',
+      position: 'front',
+      healthScore: 85,
+      healthStatus: 'good',
+    });
+  });
+
+  it('throws when the user tire wear target is not found for the user', async () => {
+    const prisma = {
+      userTire: {
+        findFirst: jest.fn(() => Promise.resolve(null)),
+      },
+    };
+    const service = new TiresService(prisma as any, {} as any);
+
+    await expect(service.getUserTireWear(1, 10)).rejects.toThrow(
+      'User tire not found',
+    );
+  });
 });

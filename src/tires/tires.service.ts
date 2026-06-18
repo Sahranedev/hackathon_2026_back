@@ -7,7 +7,11 @@ import {
 } from 'src/tire-wear/tire-wear.service';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
-import { UserTireInfoDto, UserTireSummaryDto } from 'src/types/user-tire.type';
+import {
+  UserTireInfoDto,
+  UserTireSummaryDto,
+  UserTireWearDto,
+} from 'src/types/user-tire.type';
 
 @Injectable()
 export class TiresService {
@@ -84,6 +88,35 @@ export class TiresService {
       kilometers: userTire.kilometers,
       lastPressureBar: userTire.sensorReadings[0]?.pressureBar ?? null,
       smartTire: userTire.smartTire,
+    };
+  }
+
+  async getUserTireWear(
+    userId: number,
+    userTireId: number,
+  ): Promise<UserTireWearDto> {
+    const userTire = await this.prisma.userTire.findFirst({
+      where: {
+        id: userTireId,
+        userId,
+      },
+      include: {
+        tire: true,
+      },
+    });
+
+    if (!userTire) {
+      throw new NotFoundException('User tire not found');
+    }
+
+    const wear = await this.getWearSnapshot(userTire);
+
+    return {
+      id: userTire.id,
+      model: userTire.tire?.model ?? 'Pneu inconnu',
+      position: userTire.position,
+      healthScore: wear.healthScore,
+      healthStatus: wear.healthStatus,
     };
   }
 
