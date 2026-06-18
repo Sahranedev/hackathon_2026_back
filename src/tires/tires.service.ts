@@ -7,7 +7,7 @@ import {
 } from 'src/tire-wear/tire-wear.service';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
-import { UserTireSummaryDto } from 'src/types/user-tire.type';
+import { UserTireInfoDto, UserTireSummaryDto } from 'src/types/user-tire.type';
 
 @Injectable()
 export class TiresService {
@@ -50,6 +50,41 @@ export class TiresService {
         };
       }),
     );
+  }
+
+  async getUserTireInfo(
+    userId: number,
+    userTireId: number,
+  ): Promise<UserTireInfoDto> {
+    const userTire = await this.prisma.userTire.findFirst({
+      where: {
+        id: userTireId,
+        userId,
+      },
+      select: {
+        id: true,
+        kilometers: true,
+        smartTire: true,
+        sensorReadings: {
+          orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
+          take: 1,
+          select: {
+            pressureBar: true,
+          },
+        },
+      },
+    });
+
+    if (!userTire) {
+      throw new NotFoundException('User tire not found');
+    }
+
+    return {
+      id: userTire.id,
+      kilometers: userTire.kilometers,
+      lastPressureBar: userTire.sensorReadings[0]?.pressureBar ?? null,
+      smartTire: userTire.smartTire,
+    };
   }
 
   private async getWearSnapshot(userTire: {

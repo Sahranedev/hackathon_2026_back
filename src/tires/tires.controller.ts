@@ -20,6 +20,14 @@ export class TiresController {
     return this.tiresService.getUserTires(authenticatedUser.id);
   }
 
+  @Get('mine/:id/info')
+  getUserTireInfo(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.tiresService.getUserTireInfo(authenticatedUser.id, id);
+  }
+
   @Get('/model/:id')
   getTireModelDetail(@Param('id', ParseIntPipe) id: number) {
     return this.tiresService.getTireModelDetail(id);

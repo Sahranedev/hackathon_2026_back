@@ -16,3 +16,10 @@ export type UserTireSummaryDto = {
   healthDetails: TireWearScoreDetails;
   healthAlertType: 'REPLACE_SOON' | null;
 };
+
+export type UserTireInfoDto = {
+  id: number;
+  kilometers: number | null;
+  lastPressureBar: number | null;
+  smartTire: boolean | null;
+};

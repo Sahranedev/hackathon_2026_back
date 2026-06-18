@@ -69,4 +69,60 @@ describe('TiresService', () => {
       },
     ]);
   });
+
+  it('returns user tire info with the latest pressure reading', async () => {
+    const prisma = {
+      userTire: {
+        findFirst: jest.fn(() =>
+          Promise.resolve({
+            id: 10,
+            kilometers: 2000,
+            smartTire: true,
+            sensorReadings: [{ pressureBar: 2.35 }],
+          }),
+        ),
+      },
+    };
+    const service = new TiresService(prisma as any, {} as any);
+
+    const result = await service.getUserTireInfo(1, 10);
+
+    expect(prisma.userTire.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 10,
+        userId: 1,
+      },
+      select: {
+        id: true,
+        kilometers: true,
+        smartTire: true,
+        sensorReadings: {
+          orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
+          take: 1,
+          select: {
+            pressureBar: true,
+          },
+        },
+      },
+    });
+    expect(result).toEqual({
+      id: 10,
+      kilometers: 2000,
+      lastPressureBar: 2.35,
+      smartTire: true,
+    });
+  });
+
+  it('throws when the user tire info is not found for the user', async () => {
+    const prisma = {
+      userTire: {
+        findFirst: jest.fn(() => Promise.resolve(null)),
+      },
+    };
+    const service = new TiresService(prisma as any, {} as any);
+
+    await expect(service.getUserTireInfo(1, 10)).rejects.toThrow(
+      'User tire not found',
+    );
+  });
 });
