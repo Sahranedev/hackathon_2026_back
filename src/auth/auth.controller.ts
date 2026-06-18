@@ -11,10 +11,16 @@ import { Public } from '../security/decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { CurrentUser } from '../security/decorators/current-user.decorator';
+import type { AuthenticatedUser } from './types/authenticated-request.type';
+import { UsersService } from '../users/users.service';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Public()
   @Post('login')
@@ -29,8 +35,8 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@Req() req: { user: unknown }) {
-    return req.user;
+  me(@CurrentUser() authenticatedUser: AuthenticatedUser) {
+    return this.usersService.getCurrentUserProfile(authenticatedUser.id);
   }
 
   @Get('strava/connect')
