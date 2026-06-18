@@ -1,11 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { TireData } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RetailsService } from 'src/retails/retails.service';
 import {
   TireWearEvaluationResult,
   TireWearService,
 } from 'src/tire-wear/tire-wear.service';
 import { TireCatalogItemDto } from 'src/types/tire-catalog.type';
+import { TireDealerDto } from 'src/types/tire-dealer.type';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
 import {
@@ -22,6 +24,7 @@ export class TiresService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tireWearService: TireWearService,
+    private readonly retailsService: RetailsService,
   ) {}
 
   async findById(tireId: number): Promise<TireData | null> {
@@ -306,6 +309,35 @@ export class TiresService {
 
     const { recommendationWeight: _, ...detail } = tire;
     return detail;
+  }
+
+  async getTireDealers(tireId: number): Promise<TireDealerDto[]> {
+    const tire = await this.prisma.tireData.findUnique({
+      where: { id: tireId },
+      select: { id: true },
+    });
+
+    if (!tire) {
+      throw new NotFoundException('Tire not found');
+    }
+
+    const retails = await this.retailsService.findAll();
+
+    return retails
+      .filter(
+        (retail) =>
+          retail.latitude != null &&
+          retail.longitude != null &&
+          retail.phoneNumber != null,
+      )
+      .map((retail) => ({
+        id: String(retail.id),
+        name: retail.name,
+        address: retail.address,
+        phone: retail.phoneNumber!,
+        latitude: retail.latitude!,
+        longitude: retail.longitude!,
+      }));
   }
 
   async deleteUserTire(userId: number, userTireId: number) {
