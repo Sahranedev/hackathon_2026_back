@@ -16,6 +16,7 @@ export type AlertMetadata = {
 
 export type Alert = {
   id: number;
+  userTireId: number;
   code: string;
   message: string;
   isChecked: boolean;

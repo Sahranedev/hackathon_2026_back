@@ -79,6 +79,7 @@ export class AlertPersistenceService {
 
   private toAlert(alert: {
     id: number;
+    userTireId: number;
     code: string;
     message: string;
     isChecked: boolean;
@@ -86,6 +87,7 @@ export class AlertPersistenceService {
   }): Alert {
     return {
       id: alert.id,
+      userTireId: alert.userTireId,
       code: alert.code,
       message: alert.message,
       isChecked: alert.isChecked,

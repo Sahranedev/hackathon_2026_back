@@ -49,6 +49,7 @@ export class AlertsService {
       where: { userTire: { userId } },
       select: {
         id: true,
+        userTireId: true,
         code: true,
         message: true,
         isChecked: true,
@@ -69,6 +70,7 @@ export class AlertsService {
       where: { userTireId },
       select: {
         id: true,
+        userTireId: true,
         code: true,
         message: true,
         isChecked: true,
@@ -92,6 +94,7 @@ export class AlertsService {
 
     return {
       id: alert.id,
+      userTireId: alert.userTireId,
       code: alert.code,
       message: alert.message,
       isChecked: alert.isChecked,
