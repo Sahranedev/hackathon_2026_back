@@ -282,6 +282,7 @@ export class TiresService {
       select: {
         id: true,
         model: true,
+        tireImage: true,
       },
       orderBy: {
         model: 'asc',
@@ -292,6 +293,7 @@ export class TiresService {
     return tires.map((tire) => ({
       id: tire.id,
       name: tire.model,
+      tireImage: tire.tireImage,
     }));
   }
 

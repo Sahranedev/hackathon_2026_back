@@ -202,6 +202,7 @@ model TireData {
 
   familyName   String? @map("family_name")
   productRange String? @map("product_range")
+  tireImage    String? @map("tire_image") @db.Text
 
   recommendationWeight Int @default(0) @map("recommendation_weight")
 

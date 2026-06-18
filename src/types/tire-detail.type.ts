@@ -22,6 +22,7 @@ export type TireDetailDto = {
   performanceProfiles: TirePerformanceProfile[];
   familyName: string | null;
   productRange: string | null;
+  tireImage: string | null;
   minPressure: number;
   maxPressure: number;
   maxKilometers: number;
