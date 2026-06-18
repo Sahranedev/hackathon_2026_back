@@ -6,7 +6,9 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ACTIVITY_COMPLETED,
+  ACTIVITY_STARTED,
   ActivityCompletedEvent,
+  ActivityStartedEvent,
 } from '../common/events/app-events';
 import { PrismaService } from '../prisma/prisma.service';
 import { StravaService } from '../strava/strava.service';
@@ -44,6 +46,13 @@ export class ActivitiesService {
       activityId: activity.id,
       kilometers: activity.kilometers ?? 0,
     } satisfies ActivityCompletedEvent);
+  }
+
+  private emitActivityStarted(activity: { id: number; userId: number }): void {
+    this.eventEmitter.emit(ACTIVITY_STARTED, {
+      userId: activity.userId,
+      activityId: activity.id,
+    } satisfies ActivityStartedEvent);
   }
 
   async findAll(userId: number) {
@@ -195,6 +204,8 @@ export class ActivitiesService {
         tires: true,
       },
     });
+
+    this.emitActivityStarted(activity);
 
     return this.serializeActivity(activity);
   }

@@ -21,6 +21,7 @@ import { InfluencerModule } from './influencer/influencer.module';
 import { TireWearModule } from './tire-wear/tire-wear.module';
 import { AiModule } from './ai/ai.module';
 import { EventsModule } from './events/events.module';
+import { DemoAlertsModule } from './demo/demo-alerts.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { EventsModule } from './events/events.module';
     TireWearModule,
     AiModule,
     EventsModule,
+    DemoAlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

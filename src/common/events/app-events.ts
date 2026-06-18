@@ -9,6 +9,7 @@
 import type { TierVoucher } from '../../loyalty/loyalty.config';
 
 export const ACTIVITY_COMPLETED = 'activity.completed';
+export const ACTIVITY_STARTED = 'activity.started';
 export const REFERRAL_COMPLETED = 'referral.completed';
 export const TIER_REACHED = 'tier.reached';
 
@@ -16,6 +17,11 @@ export interface ActivityCompletedEvent {
   userId: number;
   activityId: number;
   kilometers: number;
+}
+
+export interface ActivityStartedEvent {
+  userId: number;
+  activityId: number;
 }
 
 export interface ReferralCompletedEvent {

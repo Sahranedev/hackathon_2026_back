@@ -7,5 +7,6 @@ import { TireSensorService } from './tire-sensor.service';
   imports: [TireHealthModule],
   controllers: [TireSensorController],
   providers: [TireSensorService],
+  exports: [TireSensorService],
 })
 export class TireSensorModule {}

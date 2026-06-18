@@ -1,5 +1,10 @@
 import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AlertsService } from './alerts.service';
 import { CurrentUser } from 'src/security/decorators/current-user.decorator';
 import type { AuthenticatedUser } from 'src/auth/types/authenticated-request.type';
@@ -15,14 +20,18 @@ export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lister les alertes actives de l utilisateur courant.' })
+  @ApiOperation({
+    summary: 'Lister les alertes actives de l utilisateur courant.',
+  })
   @ApiOkResponse({ type: [AlertResponseDto] })
   async getUserAlerts(@CurrentUser() authenticatedUser: AuthenticatedUser) {
     return this.alertsService.getUserAlerts(authenticatedUser.id);
   }
 
   @Get('tire/:id')
-  @ApiOperation({ summary: 'Lister les alertes actives d un pneu utilisateur.' })
+  @ApiOperation({
+    summary: 'Lister les alertes actives d un pneu utilisateur.',
+  })
   @ApiParam({ name: 'id', type: Number, example: 12 })
   @ApiOkResponse({ type: [AlertResponseDto] })
   async getTireAlerts(@Param('id') tireId: string) {

@@ -79,7 +79,7 @@ async function main() {
         imageUrl: 'images/event-michelin.webp',
       },
     ],
-});
+  });
 
   const demoUser = await prisma.user.create({
     data: {
@@ -110,6 +110,7 @@ async function main() {
         connect: { id: demoTires[0].id },
       },
       position: 'FRONT',
+      deviceId: 'tyre-front-001',
       kilometers: 420,
       smartTire: true,
       isActive: true,
@@ -125,6 +126,7 @@ async function main() {
         connect: { id: demoTires[1].id },
       },
       position: 'REAR',
+      deviceId: 'tyre-rear-001',
       kilometers: 760,
       smartTire: true,
       isActive: true,
@@ -140,6 +142,7 @@ async function main() {
         connect: { id: demoTires[2].id },
       },
       position: 'SPARE',
+      deviceId: 'tyre-spare-001',
       kilometers: 3100,
       smartTire: false,
       isActive: false,
