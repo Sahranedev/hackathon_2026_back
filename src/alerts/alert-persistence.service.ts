@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from 'src/generated/prisma/client';
+import { ActivityStatus, Prisma } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Alert, AlertMetadata } from 'src/types/alerts.type';
 
@@ -23,7 +23,7 @@ export class AlertPersistenceService {
     code: string,
     message: string,
     metadata?: AlertMetadata,
-  ): Promise<Alert> {
+  ): Promise<Alert | null> {
     const metadataJson = metadata as Prisma.InputJsonValue | undefined;
 
     const existingAlert = await this.prisma.alert.findFirst({
@@ -44,6 +44,27 @@ export class AlertPersistenceService {
         data: { message, metadata: metadataJson ?? Prisma.JsonNull },
       });
       return this.toAlert(updated);
+    }
+
+    const checkedAlert = await this.prisma.alert.findFirst({
+      where: { userTireId, code, isChecked: true },
+      orderBy: [
+        { checkedAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+    });
+
+    if (checkedAlert) {
+      const checkedAt = checkedAlert.checkedAt ?? checkedAlert.createdAt;
+      const hasNewActivity = await this.hasInProgressActivityAfter(
+        userTireId,
+        checkedAt,
+      );
+
+      if (!hasNewActivity) {
+        return null;
+      }
     }
 
     const created = await this.prisma.alert.create({
@@ -75,6 +96,39 @@ export class AlertPersistenceService {
     });
 
     return result.count > 0;
+  }
+
+  private async hasInProgressActivityAfter(
+    userTireId: number,
+    checkedAt: Date,
+  ): Promise<boolean> {
+    const activity = await this.prisma.activity.findFirst({
+      where: {
+        status: ActivityStatus.IN_PROGRESS,
+        tires: {
+          some: {
+            tireId: userTireId,
+          },
+        },
+        OR: [
+          {
+            createdAt: {
+              gt: checkedAt,
+            },
+          },
+          {
+            startedAt: {
+              gt: checkedAt,
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return activity !== null;
   }
 
   private toAlert(alert: {

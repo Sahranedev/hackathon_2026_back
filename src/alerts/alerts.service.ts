@@ -46,7 +46,7 @@ export class AlertsService {
 
   async getUserAlerts(userId: number): Promise<Alert[]> {
     const alerts = await this.prisma.alert.findMany({
-      where: { userTire: { userId } },
+      where: { userTire: { userId }, isChecked: false },
       select: {
         id: true,
         userTireId: true,
@@ -67,7 +67,7 @@ export class AlertsService {
 
   async getTireAlerts(userTireId: number): Promise<Alert[]> {
     const alerts = await this.prisma.alert.findMany({
-      where: { userTireId },
+      where: { userTireId, isChecked: false },
       select: {
         id: true,
         userTireId: true,
@@ -89,7 +89,7 @@ export class AlertsService {
   async checkAlert(userId: number, alertId: number): Promise<Alert> {
     const alert = await this.prisma.alert.update({
       where: { id: alertId, userTire: { userId } },
-      data: { isChecked: true },
+      data: { isChecked: true, checkedAt: new Date() },
     });
 
     return {

@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false,
+    "declaration": false,
+    "sourceMap": false,
+    "emitDecoratorMetadata": false,
+    "experimentalDecorators": false
+  },
+  "include": [
+    "prisma/**/*.ts",
+    "src/common/password.util.ts",
+    "src/generated/prisma/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -47,8 +47,9 @@ export class TireHealthService {
       reading,
       measuredAt,
     );
-    const latestReadings = await this.findLatestReadings(reading.deviceId);
-    const readingCount = await this.countReadings(reading.deviceId);
+    const latestReadings =
+      await this.findReadingsForCurrentAnalysis(currentReading);
+    const readingCount = await this.countReadingsThroughCurrent(currentReading);
     const slowLeakState = await this.handleSlowLeakState(
       userTire.id,
       latestReadings,
@@ -75,11 +76,13 @@ export class TireHealthService {
       temperatureC: currentReading.temperatureC,
       measuredAt: currentReading.measuredAt.toISOString(),
       status: analysis.status,
+      pressureStatus: analysis.status,
       alertType: analysis.alertType,
       severity: analysis.severity,
       message: analysis.message,
       recommendedAction: analysis.recommendedAction,
       alertCreated,
+      pressureAlertCreated: alertCreated,
     };
   }
 
@@ -125,7 +128,7 @@ export class TireHealthService {
         alertType: 'PRESSURE_TOO_LOW',
         severity: 'warning',
         message:
-          'La pression du pneu est inférieure à la recommandation Michelin.',
+          'La pression du pneu est inferieure a la recommandation Michelin.',
         recommendedAction: 'Regonfler le pneu',
       };
     }
@@ -137,7 +140,7 @@ export class TireHealthService {
         alertType: 'PRESSURE_TOO_HIGH',
         severity: 'warning',
         message:
-          'La pression du pneu est supérieure à la recommandation Michelin.',
+          'La pression du pneu est superieure a la recommandation Michelin.',
         recommendedAction: 'Adapter la pression selon votre pratique.',
       };
     }
@@ -270,9 +273,9 @@ export class TireHealthService {
       shouldCreateAlert: true,
       alertType: SLOW_LEAK_ALERT_TYPE,
       severity: 'critical',
-      message: 'Suspicion de crevaison lente détectée sur plusieurs mesures.',
+      message: 'Suspicion de crevaison lente detectee sur plusieurs mesures.',
       recommendedAction:
-        'Contrôler le pneu et rechercher une fuite avant de rouler.',
+        'Controler le pneu et rechercher une fuite avant de rouler.',
     };
   }
 
@@ -292,29 +295,59 @@ export class TireHealthService {
         shouldCreateAlert: true,
         alertType: 'ABNORMAL_PRESSURE_DROP',
         severity: 'warning',
-        message: 'Baisse de pression anormale détectée entre deux mesures.',
+        message: 'Baisse de pression anormale detectee entre deux mesures.',
         recommendedAction:
-          "Contrôler la pression et vérifier l'évolution à la prochaine mesure.",
+          "Controler la pression et verifier l'evolution a la prochaine mesure.",
       };
     }
 
     return null;
   }
 
-  private findLatestReadings(deviceId: string) {
-    return this.prisma.tireSensorReading.findMany({
+  private async findReadingsForCurrentAnalysis(
+    currentReading: TireSensorReading,
+  ): Promise<TireSensorReading[]> {
+    const previousReadings = await this.prisma.tireSensorReading.findMany({
       where: {
-        deviceId,
+        deviceId: currentReading.deviceId,
+        OR: [
+          {
+            measuredAt: {
+              lt: currentReading.measuredAt,
+            },
+          },
+          {
+            measuredAt: currentReading.measuredAt,
+            id: {
+              lt: currentReading.id,
+            },
+          },
+        ],
       },
       orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
-      take: 3,
+      take: 2,
     });
+
+    return [currentReading, ...previousReadings];
   }
 
-  private countReadings(deviceId: string) {
+  private countReadingsThroughCurrent(currentReading: TireSensorReading) {
     return this.prisma.tireSensorReading.count({
       where: {
-        deviceId,
+        deviceId: currentReading.deviceId,
+        OR: [
+          {
+            measuredAt: {
+              lt: currentReading.measuredAt,
+            },
+          },
+          {
+            measuredAt: currentReading.measuredAt,
+            id: {
+              lte: currentReading.id,
+            },
+          },
+        ],
       },
     });
   }
@@ -367,14 +400,14 @@ export class TireHealthService {
       return false;
     }
 
-    await this.alertPersistenceService.createAlert(
+    const alert = await this.alertPersistenceService.createAlert(
       userTireId,
       analysis.alertType,
       `${this.getAlertTitle(analysis.alertType)} - ${analysis.message} ${analysis.recommendedAction}`,
       metadata,
     );
 
-    return true;
+    return alert !== null;
   }
 
   private getAlertTitle(alertType: string) {
@@ -382,7 +415,7 @@ export class TireHealthService {
       case 'PRESSURE_TOO_LOW':
         return 'Pression trop basse';
       case 'PRESSURE_TOO_HIGH':
-        return 'Pression trop élevée';
+        return 'Pression trop elevee';
       case 'ABNORMAL_PRESSURE_DROP':
         return 'Baisse de pression anormale';
       case 'SLOW_LEAK_SUSPECTED':

@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AccountType } from '../generated/prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { SafeUser } from './types/safe-user.type';
+import { CurrentUserProfile, SafeUser } from './types/safe-user.type';
 
 @Injectable()
 export class UsersService {
@@ -52,6 +52,39 @@ export class UsersService {
     return this.prisma.user.findFirst({
       where: { mail },
     });
+  }
+
+  async getCurrentUserProfile(id: number): Promise<CurrentUserProfile> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        mail: true,
+        roles: true,
+        accountType: true,
+        points: true,
+        currentTier: true,
+        referralCode: true,
+        stravaAccount: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User ${id} not found`);
+    }
+
+    const { stravaAccount, ...safeUser } = user;
+
+    return {
+      ...safeUser,
+      stravaLinked: stravaAccount !== null,
+    };
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<SafeUser> {

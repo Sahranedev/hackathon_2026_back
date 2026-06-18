@@ -74,18 +74,18 @@ model OAuthState {
 }
 
 model UserTire {
-  id            Int            @id @default(autoincrement())
-  position      String?
-  tireId        Int?           @map("tire_id")
-  userId        Int?           @map("user_id")
-  deviceId      String?        @unique @map("device_id")
-  kilometers    Int?
-  smartTire     Boolean?       @map("smart_tire")
-  isActive      Boolean?       @map("isActive")
-  tire          TireData?      @relation(fields: [tireId], references: [id])
-  user          User?          @relation(fields: [userId], references: [id])
-  activityTires ActivityTire[]
-  alerts        Alert[]
+  id             Int                 @id @default(autoincrement())
+  position       String?
+  tireId         Int?                @map("tire_id")
+  userId         Int?                @map("user_id")
+  deviceId       String?             @unique @map("device_id")
+  kilometers     Int?
+  smartTire      Boolean?            @map("smart_tire")
+  isActive       Boolean?            @map("isActive")
+  tire           TireData?           @relation(fields: [tireId], references: [id])
+  user           User?               @relation(fields: [userId], references: [id])
+  activityTires  ActivityTire[]
+  alerts         Alert[]
   sensorReadings TireSensorReading[]
 
   @@map("users_tire")
@@ -155,16 +155,18 @@ model ActivityGpsPoint {
 }
 
 model Alert {
-  id         Int      @id @default(autoincrement())
-  userTireId Int      @map("user_tire_id")
+  id         Int       @id @default(autoincrement())
+  userTireId Int       @map("user_tire_id")
   code       String
-  isChecked  Boolean  @default(false)
+  isChecked  Boolean   @default(false)
   message    String
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  checkedAt  DateTime? @map("checked_at")
   metadata   Json?
 
   userTire UserTire? @relation(fields: [userTireId], references: [id])
 
+  @@index([userTireId, code, isChecked])
   @@map("Alerts")
 }
 

@@ -5,6 +5,7 @@ describe('TireHealthService', () => {
   const tireProduct = {
     id: 1,
     model: 'Michelin Test',
+    terrainTypes: [],
     minPressure: 3,
     maxPressure: 5,
   };
@@ -14,9 +15,13 @@ describe('TireHealthService', () => {
     tire: tireProduct,
   };
 
-  function createTestContext() {
+  function createTestContext({
+    kilometers,
+  }: {
+    kilometers?: number;
+  } = {}) {
     let nextReadingId = 1;
-    let activeAlert: any = null;
+    const activeAlerts = new Map<string, any>();
     const readings: any[] = [];
 
     const prisma = {
@@ -32,9 +37,9 @@ describe('TireHealthService', () => {
 
           return Promise.resolve(created);
         }),
-        findMany: jest.fn(({ where, orderBy, take }) => {
+        findMany: jest.fn(({ where, orderBy, take, select }) => {
           const results = readings
-            .filter((reading) => reading.deviceId === where.deviceId)
+            .filter((reading) => matchesWhere(reading, where))
             .sort((left, right) => {
               const measuredAtDiff =
                 right.measuredAt.getTime() - left.measuredAt.getTime();
@@ -49,21 +54,33 @@ describe('TireHealthService', () => {
 
           expect(orderBy).toEqual([{ measuredAt: 'desc' }, { id: 'desc' }]);
 
+          if (select?.pressureBar) {
+            return Promise.resolve(
+              results.map((reading) => ({
+                pressureBar: reading.pressureBar,
+              })),
+            );
+          }
+
           return Promise.resolve(results);
         }),
         count: jest.fn(({ where }) =>
           Promise.resolve(
-            readings.filter((reading) => reading.deviceId === where.deviceId)
-              .length,
+            readings.filter((reading) => matchesWhere(reading, where)).length,
           ),
         ),
+      },
+      activity: {
+        findMany: jest.fn(() => Promise.resolve([])),
       },
     };
 
     const alertPersistenceService = {
-      findActiveAlert: jest.fn(() => Promise.resolve(activeAlert)),
+      findActiveAlert: jest.fn((_userTireId, code) =>
+        Promise.resolve(activeAlerts.get(code) ?? null),
+      ),
       createAlert: jest.fn((userTireId, code, message, metadata) => {
-        activeAlert = {
+        const activeAlert = {
           id: 100,
           userTireId,
           code,
@@ -71,21 +88,24 @@ describe('TireHealthService', () => {
           isChecked: false,
           metadata,
         };
+        activeAlerts.set(code, activeAlert);
 
         return Promise.resolve(activeAlert);
       }),
       updateAlertMetadata: jest.fn((alertId, metadata) => {
-        activeAlert = {
+        const activeAlert = activeAlerts.get('SLOW_LEAK_SUSPECTED');
+        const updated = {
           ...activeAlert,
           id: alertId,
           metadata,
         };
+        activeAlerts.set('SLOW_LEAK_SUSPECTED', updated);
 
-        return Promise.resolve(activeAlert);
+        return Promise.resolve(updated);
       }),
-      deleteActiveAlert: jest.fn(() => {
-        const hadActiveAlert = activeAlert !== null;
-        activeAlert = null;
+      deleteActiveAlert: jest.fn((_userTireId, code) => {
+        const hadActiveAlert = activeAlerts.has(code);
+        activeAlerts.delete(code);
 
         return Promise.resolve(hadActiveAlert);
       }),
@@ -93,7 +113,12 @@ describe('TireHealthService', () => {
 
     const service = new TireHealthService(
       {
-        findByDeviceId: jest.fn(() => Promise.resolve(userTire)),
+        findByDeviceId: jest.fn(() =>
+          Promise.resolve({
+            ...userTire,
+            kilometers: kilometers ?? null,
+          }),
+        ),
       } as any,
       {
         findById: jest.fn(() => Promise.resolve(tireProduct)),
@@ -106,6 +131,42 @@ describe('TireHealthService', () => {
       alertPersistenceService,
       service,
     };
+  }
+
+  function matchesWhere(reading: any, where: any) {
+    if (where.deviceId && reading.deviceId !== where.deviceId) {
+      return false;
+    }
+
+    if (where.userTireId && reading.userTireId !== where.userTireId) {
+      return false;
+    }
+
+    if (!where.OR) {
+      return true;
+    }
+
+    return where.OR.some((condition: any) => {
+      if (condition.measuredAt?.lt) {
+        return reading.measuredAt.getTime() < condition.measuredAt.lt.getTime();
+      }
+
+      if (condition.measuredAt instanceof Date && condition.id?.lt) {
+        return (
+          reading.measuredAt.getTime() === condition.measuredAt.getTime() &&
+          reading.id < condition.id.lt
+        );
+      }
+
+      if (condition.measuredAt instanceof Date && condition.id?.lte) {
+        return (
+          reading.measuredAt.getTime() === condition.measuredAt.getTime() &&
+          reading.id <= condition.id.lte
+        );
+      }
+
+      return false;
+    });
   }
 
   it('creates slow leak alert after three decreasing readings', async () => {
@@ -191,5 +252,26 @@ describe('TireHealthService', () => {
     expect(result.status).toBe('good');
     expect(result.alertType).toBeNull();
     expect(result.alertCreated).toBe(false);
+  });
+
+  it('analyzes the current reading even when older future readings already exist', async () => {
+    const { service } = createTestContext();
+
+    await service.analyzeSensorReading({
+      deviceId,
+      pressureBar: 4.2,
+      temperatureC: 22,
+      measuredAt: '2026-06-17T12:00:00.000Z',
+    });
+    const result = await service.analyzeSensorReading({
+      deviceId,
+      pressureBar: 2.6,
+      temperatureC: 22,
+      measuredAt: '2026-06-17T10:00:00.000Z',
+    });
+
+    expect(result.pressureBar).toBe(2.6);
+    expect(result.pressureStatus).toBe('warning');
+    expect(result.alertType).toBe('PRESSURE_TOO_LOW');
   });
 });
