@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,6 +14,7 @@ import type { AuthenticatedUser } from 'src/auth/types/authenticated-request.typ
 import { CurrentUser } from 'src/security/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/security/guards/jwt-auth.guard';
 import { CreateUserTireDto } from './dto/create-user-tire.dto';
+import { UpdateUserTireActiveDto } from './dto/update-user-tire-active.dto';
 import { TiresService } from './tires.service';
 
 @UseGuards(JwtAuthGuard)
@@ -51,7 +53,20 @@ export class TiresController {
   ) {
     return this.tiresService.getUserTireWear(authenticatedUser.id, id);
   }
-  
+
+  @Patch('mine/:id/active')
+  updateUserTireActive(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserTireActiveDto: UpdateUserTireActiveDto,
+  ) {
+    return this.tiresService.updateUserTireActive(
+      authenticatedUser.id,
+      id,
+      updateUserTireActiveDto.isActive,
+    );
+  }
+
   @Delete('mine/:id')
   deleteUserTire(
     @CurrentUser() authenticatedUser: AuthenticatedUser,

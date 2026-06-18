@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { TireData } from 'src/generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -9,10 +9,13 @@ import { TireCatalogItemDto } from 'src/types/tire-catalog.type';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
 import {
+  UserTireActiveDto,
   UserTireInfoDto,
   UserTireSummaryDto,
   UserTireWearDto,
 } from 'src/types/user-tire.type';
+
+const MAX_ACTIVE_USER_TIRES = 2;
 
 @Injectable()
 export class TiresService {
@@ -121,6 +124,74 @@ export class TiresService {
     };
   }
 
+  async updateUserTireActive(
+    userId: number,
+    userTireId: number,
+    isActive: boolean,
+  ): Promise<UserTireActiveDto> {
+    const userTire = await this.prisma.userTire.findFirst({
+      where: {
+        id: userTireId,
+        userId,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!userTire) {
+      throw new NotFoundException('User tire not found');
+    }
+
+    if (isActive && !userTire.isActive) {
+      await this.assertCanActivateUserTire(userId, userTire.id);
+    }
+
+    const updatedUserTire = await this.prisma.userTire.update({
+      where: {
+        id: userTire.id,
+      },
+      data: {
+        isActive,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    return {
+      id: updatedUserTire.id,
+      isActive: updatedUserTire.isActive ?? false,
+    };
+  }
+
+  private async assertCanActivateUserTire(
+    userId: number,
+    excludedUserTireId?: number,
+  ) {
+    const activeTiresCount = await this.prisma.userTire.count({
+      where: {
+        userId,
+        isActive: true,
+        ...(excludedUserTireId
+          ? {
+              id: {
+                not: excludedUserTireId,
+              },
+            }
+          : {}),
+      },
+    });
+
+    if (activeTiresCount >= MAX_ACTIVE_USER_TIRES) {
+      throw new ConflictException(
+        'Un utilisateur ne peut avoir que jusqu\'à 2 pneus actifs.',
+      );
+    }
+  }
+
   private async getWearSnapshot(userTire: {
     id: number;
     kilometers: number | null;
@@ -163,6 +234,8 @@ export class TiresService {
     if (!tire) {
       throw new NotFoundException('Tire not found');
     }
+
+    await this.assertCanActivateUserTire(userId);
 
     const userTire = await this.prisma.userTire.create({
       data: {

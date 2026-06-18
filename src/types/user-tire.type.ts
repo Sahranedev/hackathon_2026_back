@@ -31,3 +31,8 @@ export type UserTireWearDto = {
   healthScore: number;
   healthStatus: TireWearStatus;
 };
+
+export type UserTireActiveDto = {
+  id: number;
+  isActive: boolean;
+};
