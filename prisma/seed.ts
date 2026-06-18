@@ -17,6 +17,8 @@ const prisma = new PrismaClient({
 
 const demoUserEmail = 'demo@michelin-bike.local';
 const demoUserPassword = 'password';
+const defaultTireImageUrl =
+  'https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp';
 
 async function main() {
   await prisma.alert.deleteMany();
@@ -35,7 +37,14 @@ async function main() {
   await prisma.retail.deleteMany();
 
   const tireResult = await prisma.tireData.createMany({
-    data: michelinTires.map(enrichTireSeed),
+    data: michelinTires.map((tire) => {
+      const { tire_image: tireImage, ...enrichedTire } = enrichTireSeed(tire);
+
+      return {
+        ...enrichedTire,
+        tireImage: tireImage ?? defaultTireImageUrl,
+      };
+    }),
   });
 
   const retailResult = await prisma.retail.createMany({

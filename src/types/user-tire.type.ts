@@ -10,6 +10,7 @@ export type UserTireSummaryDto = {
   smartTire: boolean | null;
   isActive: boolean | null;
   model: string;
+  tireImage: string | null;
   health: number;
   healthScore: number;
   healthStatus: TireWearStatus;
@@ -22,11 +23,14 @@ export type UserTireInfoDto = {
   kilometers: number | null;
   lastPressureBar: number | null;
   smartTire: boolean | null;
+  model: string;
+  tireImage: string | null;
 };
 
 export type UserTireWearDto = {
   id: number;
   model: string;
+  tireImage: string | null;
   position: string | null;
   healthScore: number;
   healthStatus: TireWearStatus;

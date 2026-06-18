@@ -53,6 +53,7 @@ export class TiresService {
           smartTire: userTire.smartTire,
           isActive: userTire.isActive,
           model: userTire.tire?.model ?? 'Pneu inconnu',
+          tireImage: userTire.tire?.tireImage ?? null,
           health: wear.healthScore,
           healthScore: wear.healthScore,
           healthStatus: wear.healthStatus,
@@ -76,6 +77,12 @@ export class TiresService {
         id: true,
         kilometers: true,
         smartTire: true,
+        tire: {
+          select: {
+            model: true,
+            tireImage: true,
+          },
+        },
         sensorReadings: {
           orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
           take: 1,
@@ -95,6 +102,8 @@ export class TiresService {
       kilometers: userTire.kilometers,
       lastPressureBar: userTire.sensorReadings[0]?.pressureBar ?? null,
       smartTire: userTire.smartTire,
+      model: userTire.tire?.model ?? 'Pneu inconnu',
+      tireImage: userTire.tire?.tireImage ?? null,
     };
   }
 
@@ -121,6 +130,7 @@ export class TiresService {
     return {
       id: userTire.id,
       model: userTire.tire?.model ?? 'Pneu inconnu',
+      tireImage: userTire.tire?.tireImage ?? null,
       position: userTire.position,
       healthScore: wear.healthScore,
       healthStatus: wear.healthStatus,
@@ -260,6 +270,7 @@ export class TiresService {
       smartTire: userTire.smartTire,
       isActive: userTire.isActive,
       model: userTire.tire?.model ?? 'Pneu inconnu',
+      tireImage: userTire.tire?.tireImage ?? null,
       health: wear.healthScore,
       healthScore: wear.healthScore,
       healthStatus: wear.healthStatus,

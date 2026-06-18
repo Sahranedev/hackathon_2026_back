@@ -6,6 +6,7 @@ export type TireSeed = {
   minPressure: number;
   maxPressure: number;
   maxKilometers: number;
+  tire_image?: string;
 };
 
 export const michelinTires: TireSeed[] = [
@@ -33,6 +34,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 6,
     maxPressure: 12,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '28"-25mm POWER CUP TUBULAR BLACK',
@@ -40,6 +42,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 6,
     maxPressure: 12,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '28"-25mm POWER CUP TUBULAR CLASSIC',
@@ -47,6 +50,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 6,
     maxPressure: 12,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '28"-28mm POWER CUP TUBULAR BLACK',
@@ -54,6 +58,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 6,
     maxPressure: 12,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '28"-28mm POWER CUP TUBULAR CLASSIC',
@@ -61,6 +66,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 6,
     maxPressure: 12,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '23-622 (700X23C) POWER TIME TRIAL BLACK',
@@ -68,6 +74,7 @@ export const michelinTires: TireSeed[] = [
     minPressure: 5,
     maxPressure: 8,
     maxKilometers: 3000,
+    tire_image: "https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp"
   },
   {
     model: '25-622 (700X25C) POWER TIME TRIAL BLACK',

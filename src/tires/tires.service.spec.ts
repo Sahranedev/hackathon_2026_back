@@ -15,6 +15,7 @@ describe('TiresService', () => {
               tire: {
                 id: 1,
                 model: 'Michelin Test',
+                tireImage: 'https://example.com/test.webp',
                 maxKilometers: 3000,
               },
             },
@@ -55,6 +56,7 @@ describe('TiresService', () => {
         smartTire: true,
         isActive: true,
         model: 'Michelin Test',
+        tireImage: 'https://example.com/test.webp',
         health: 30,
         healthScore: 30,
         healthStatus: 'replace_soon',
@@ -78,6 +80,10 @@ describe('TiresService', () => {
             id: 10,
             kilometers: 2000,
             smartTire: true,
+            tire: {
+              model: 'Michelin Info',
+              tireImage: 'https://example.com/info.webp',
+            },
             sensorReadings: [{ pressureBar: 2.35 }],
           }),
         ),
@@ -96,6 +102,12 @@ describe('TiresService', () => {
         id: true,
         kilometers: true,
         smartTire: true,
+        tire: {
+          select: {
+            model: true,
+            tireImage: true,
+          },
+        },
         sensorReadings: {
           orderBy: [{ measuredAt: 'desc' }, { id: 'desc' }],
           take: 1,
@@ -110,6 +122,8 @@ describe('TiresService', () => {
       kilometers: 2000,
       lastPressureBar: 2.35,
       smartTire: true,
+      model: 'Michelin Info',
+      tireImage: 'https://example.com/info.webp',
     });
   });
 
@@ -137,6 +151,7 @@ describe('TiresService', () => {
             tire: {
               id: 1,
               model: 'Michelin Front',
+              tireImage: 'https://example.com/front.webp',
               maxKilometers: 3000,
             },
           }),
@@ -180,6 +195,7 @@ describe('TiresService', () => {
     expect(result).toEqual({
       id: 10,
       model: 'Michelin Front',
+      tireImage: 'https://example.com/front.webp',
       position: 'front',
       healthScore: 85,
       healthStatus: 'good',
@@ -295,7 +311,7 @@ describe('TiresService', () => {
     const service = new TiresService(prisma as any, {} as any);
 
     await expect(service.updateUserTireActive(1, 10, true)).rejects.toThrow(
-      'Un utilisateur ne peut avoir que 2 pneus actifs.',
+      'Un utilisateur ne peut avoir que jusqu\'à 2 pneus actifs.',
     );
     expect(prisma.userTire.update).not.toHaveBeenCalled();
   });
@@ -328,7 +344,7 @@ describe('TiresService', () => {
     const service = new TiresService(prisma as any, {} as any);
 
     await expect(service.addUserTire(1, 1)).rejects.toThrow(
-      'Un utilisateur ne peut avoir que 2 pneus actifs.',
+      'Un utilisateur ne peut avoir que jusqu\'à 2 pneus actifs.',
     );
     expect(prisma.userTire.create).not.toHaveBeenCalled();
   });
