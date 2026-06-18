@@ -7,7 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "postinstall": "prisma generate",
-    "build": "nest build",
+    "build": "nest build && npm run build:seed",
+    "build:seed": "tsc -p tsconfig.seed.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -19,7 +20,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:seed": "prisma db seed"
+    "db:seed": "npm run build:seed && prisma db seed"
   },
   "dependencies": {
     "@mistralai/mistralai": "^2.2.6",
@@ -70,7 +71,6 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.22.4",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
