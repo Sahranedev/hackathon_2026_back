@@ -5,6 +5,7 @@ import {
   TireWearEvaluationResult,
   TireWearService,
 } from 'src/tire-wear/tire-wear.service';
+import { TireCatalogItemDto } from 'src/types/tire-catalog.type';
 import { TireDetailDto } from 'src/types/tire-detail.type';
 import { TireTerrainType } from 'src/types/tires.type';
 import {
@@ -151,6 +152,76 @@ export class TiresService {
     }
   }
 
+  async addUserTire(
+    userId: number,
+    tireId: number,
+  ): Promise<UserTireSummaryDto> {
+    const tire = await this.prisma.tireData.findUnique({
+      where: { id: tireId },
+    });
+
+    if (!tire) {
+      throw new NotFoundException('Tire not found');
+    }
+
+    const userTire = await this.prisma.userTire.create({
+      data: {
+        userId,
+        tireId,
+        kilometers: 0,
+        smartTire: false,
+        isActive: true,
+      },
+      include: { tire: true },
+    });
+
+    const wear = await this.getWearSnapshot(userTire);
+
+    return {
+      id: userTire.id,
+      position: userTire.position,
+      kilometers: userTire.kilometers,
+      smartTire: userTire.smartTire,
+      isActive: userTire.isActive,
+      model: userTire.tire?.model ?? 'Pneu inconnu',
+      health: wear.healthScore,
+      healthScore: wear.healthScore,
+      healthStatus: wear.healthStatus,
+      healthDetails: wear.healthDetails,
+      healthAlertType: wear.alertType,
+    };
+  }
+
+  async searchTireCatalog(query: string): Promise<TireCatalogItemDto[]> {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    const tires = await this.prisma.tireData.findMany({
+      where: {
+        model: {
+          contains: normalizedQuery,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        id: true,
+        model: true,
+      },
+      orderBy: {
+        model: 'asc',
+      },
+      take: 20,
+    });
+
+    return tires.map((tire) => ({
+      id: tire.id,
+      name: tire.model,
+    }));
+  }
+
   async getTireModelDetail(id: number): Promise<TireDetailDto> {
     const tire = await this.prisma.tireData.findUnique({
       where: { id },
@@ -162,6 +233,41 @@ export class TiresService {
 
     const { recommendationWeight: _, ...detail } = tire;
     return detail;
+  }
+
+  async deleteUserTire(userId: number, userTireId: number) {
+    const userTire = await this.prisma.userTire.findFirst({
+      where: {
+        id: userTireId,
+        userId,
+      },
+    });
+
+    if (!userTire) {
+      throw new NotFoundException('Tire not found');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.activityTire.deleteMany({
+        where: {
+          tireId: userTireId,
+        },
+      }),
+      this.prisma.alert.deleteMany({
+        where: {
+          userTireId,
+        },
+      }),
+      this.prisma.userTire.delete({
+        where: {
+          id: userTireId,
+        },
+      }),
+    ]);
+
+    return {
+      deleted: true,
+    };
   }
 
   async getTiresTerrainTypes(tireId: number): Promise<TireTerrainType> {
