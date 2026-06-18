@@ -400,14 +400,14 @@ export class TireHealthService {
       return false;
     }
 
-    await this.alertPersistenceService.createAlert(
+    const alert = await this.alertPersistenceService.createAlert(
       userTireId,
       analysis.alertType,
       `${this.getAlertTitle(analysis.alertType)} - ${analysis.message} ${analysis.recommendedAction}`,
       metadata,
     );
 
-    return true;
+    return alert !== null;
   }
 
   private getAlertTitle(alertType: string) {

@@ -415,7 +415,7 @@ export class TireWearService {
       REPLACE_SOON_ALERT_TYPE,
     );
 
-    await this.alertPersistenceService.createAlert(
+    const alert = await this.alertPersistenceService.createAlert(
       userTire.id,
       REPLACE_SOON_ALERT_TYPE,
       "L'etat estime du pneu indique qu'un remplacement est a prevoir. Planifier le remplacement du pneu avant les prochaines longues sorties.",
@@ -434,7 +434,7 @@ export class TireWearService {
     );
 
     return {
-      created: !existingAlert,
+      created: !existingAlert && alert !== null,
       cleared: false,
     };
   }
