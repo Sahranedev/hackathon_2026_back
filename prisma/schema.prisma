@@ -12,16 +12,17 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  firstName     String?        @map("first_name")
-  lastName      String?        @map("last_name")
-  mail          String         @unique()
-  password      String?
-  stravaAccount StravaAccount?
-  oauthStates   OAuthState[]
-  tires         UserTire[]
-  roles         Roles[]        @default([USER])
-  activities    Activity[]
+  id                 Int                 @id @default(autoincrement())
+  firstName          String?             @map("first_name")
+  lastName           String?             @map("last_name")
+  mail               String              @unique()
+  password           String?
+  stravaAccount      StravaAccount?
+  oauthStates        OAuthState[]
+  tires              UserTire[]
+  roles              Roles[]             @default([USER])
+  activities         Activity[]
+  eventRegistrations EventRegistration[]
 
   accountType  AccountType @default(STANDARD) @map("account_type")
   points       Int         @default(0)
@@ -285,6 +286,38 @@ model Reward {
 
   @@index([userId])
   @@map("rewards")
+}
+
+model Event {
+  id           String   @id @default(cuid())
+  title        String
+  type         String
+  date         DateTime
+  location     String
+  participants Int      @default(0)
+  imageUrl     String?  @map("image_url")
+
+  registrations EventRegistration[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  eventId   String   @map("event_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("event_registrations")
 }
 
 enum Roles {

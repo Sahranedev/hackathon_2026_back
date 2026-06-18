@@ -20,6 +20,7 @@ import { ReferralsModule } from './referrals/referrals.module';
 import { InfluencerModule } from './influencer/influencer.module';
 import { TireWearModule } from './tire-wear/tire-wear.module';
 import { AiModule } from './ai/ai.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AiModule } from './ai/ai.module';
     InfluencerModule,
     TireWearModule,
     AiModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

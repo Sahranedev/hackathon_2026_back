@@ -35,6 +35,7 @@ async function main() {
   });
   await prisma.tireData.deleteMany();
   await prisma.retail.deleteMany();
+  await prisma.event.deleteMany();
 
   const tireResult = await prisma.tireData.createMany({
     data: michelinTires.map((tire) => {
@@ -50,6 +51,35 @@ async function main() {
   const retailResult = await prisma.retail.createMany({
     data: michelinRetails,
   });
+
+  const eventResult = await prisma.event.createMany({
+    data: [
+      {
+        title: 'Sortie Gravel Michelin',
+        type: 'Ride communautaire',
+        date: new Date('2026-06-22T09:00:00.000Z'),
+        location: 'Annecy',
+        participants: 48,
+        imageUrl: 'images/event-michelin.webp',
+      },
+      {
+        title: 'Challenge 300 km',
+        type: 'Challenge connecté',
+        date: new Date('2026-07-01T00:00:00.000Z'),
+        location: 'Lyon',
+        participants: 312,
+        imageUrl: 'images/event-michelin.webp',
+      },
+      {
+        title: 'Atelier Entretien Pneus',
+        type: 'Atelier partenaire',
+        date: new Date('2026-07-12T14:00:00.000Z'),
+        location: 'Annecy',
+        participants: 25,
+        imageUrl: 'images/event-michelin.webp',
+      },
+    ],
+});
 
   const demoUser = await prisma.user.create({
     data: {
@@ -204,6 +234,7 @@ async function main() {
   console.log(
     `Utilisateur de démo créé : ${demoUserEmail} / ${demoUserPassword}`,
   );
+  console.log(`${eventResult.count} événements insérés.`);
 }
 
 main()
