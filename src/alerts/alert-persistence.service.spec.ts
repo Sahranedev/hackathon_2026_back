@@ -51,7 +51,7 @@ describe('AlertPersistenceService', () => {
     };
   }
 
-  it('does not recreate a checked alert when no activity happened after it was read', async () => {
+  it('does not recreate a checked alert when no in-progress activity started after it was read', async () => {
     const { prisma, service } = createTestContext();
 
     const result = await service.createAlert(
@@ -64,7 +64,7 @@ describe('AlertPersistenceService', () => {
     expect(prisma.alert.create).not.toHaveBeenCalled();
     expect(prisma.activity.findFirst).toHaveBeenCalledWith({
       where: {
-        status: ActivityStatus.COMPLETED,
+        status: ActivityStatus.IN_PROGRESS,
         tires: {
           some: {
             tireId: 10,
@@ -77,12 +77,7 @@ describe('AlertPersistenceService', () => {
             },
           },
           {
-            updatedAt: {
-              gt: checkedAt,
-            },
-          },
-          {
-            endedAt: {
+            startedAt: {
               gt: checkedAt,
             },
           },
@@ -94,7 +89,7 @@ describe('AlertPersistenceService', () => {
     });
   });
 
-  it('recreates a checked alert when a completed activity happened after it was read', async () => {
+  it('recreates a checked alert when an in-progress activity started after it was read', async () => {
     const { prisma, service } = createTestContext({
       newerActivity: { id: 55 },
     });

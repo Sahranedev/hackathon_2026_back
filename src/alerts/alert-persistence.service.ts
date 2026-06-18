@@ -57,7 +57,7 @@ export class AlertPersistenceService {
 
     if (checkedAlert) {
       const checkedAt = checkedAlert.checkedAt ?? checkedAlert.createdAt;
-      const hasNewActivity = await this.hasCompletedActivityAfter(
+      const hasNewActivity = await this.hasInProgressActivityAfter(
         userTireId,
         checkedAt,
       );
@@ -98,13 +98,13 @@ export class AlertPersistenceService {
     return result.count > 0;
   }
 
-  private async hasCompletedActivityAfter(
+  private async hasInProgressActivityAfter(
     userTireId: number,
     checkedAt: Date,
   ): Promise<boolean> {
     const activity = await this.prisma.activity.findFirst({
       where: {
-        status: ActivityStatus.COMPLETED,
+        status: ActivityStatus.IN_PROGRESS,
         tires: {
           some: {
             tireId: userTireId,
@@ -117,12 +117,7 @@ export class AlertPersistenceService {
             },
           },
           {
-            updatedAt: {
-              gt: checkedAt,
-            },
-          },
-          {
-            endedAt: {
+            startedAt: {
               gt: checkedAt,
             },
           },
