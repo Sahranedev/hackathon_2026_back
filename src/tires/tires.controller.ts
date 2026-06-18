@@ -84,4 +84,9 @@ export class TiresController {
   getTireModelDetail(@Param('id', ParseIntPipe) id: number) {
     return this.tiresService.getTireModelDetail(id);
   }
+
+  @Get('model/:id/dealers')
+  getTireDealers(@Param('id', ParseIntPipe) id: number) {
+    return this.tiresService.getTireDealers(id);
+  }
 }
