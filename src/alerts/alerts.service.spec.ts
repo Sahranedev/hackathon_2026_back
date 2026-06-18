@@ -8,6 +8,7 @@ describe('AlertsService', () => {
         update: jest.fn(() =>
           Promise.resolve({
             id: 1,
+            userTireId: 12,
             code: 'PRESSURE',
             message: 'Pressure alert',
             isChecked: true,
@@ -34,6 +35,7 @@ describe('AlertsService', () => {
       where: { userTire: { userId: 7 }, isChecked: false },
       select: {
         id: true,
+        userTireId: true,
         code: true,
         message: true,
         isChecked: true,
