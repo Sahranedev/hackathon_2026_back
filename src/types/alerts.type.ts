@@ -12,6 +12,16 @@ export type AlertMetadata = {
   slowLeak?: {
     lastCheckedReadingCount?: number;
   };
+  tireHealth?: {
+    healthScore?: number;
+    healthStatus?: string;
+    mileageKm?: number;
+    mileagePenalty?: number;
+    underInflatedCount?: number;
+    underInflationPenalty?: number;
+    usagePenalty?: number;
+    tireProductName?: string;
+  };
 };
 
 export type Alert = {
