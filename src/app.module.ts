@@ -17,6 +17,7 @@ import { LoyaltyModule } from './loyalty/loyalty.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { InfluencerModule } from './influencer/influencer.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { InfluencerModule } from './influencer/influencer.module';
     RewardsModule,
     ReferralsModule,
     InfluencerModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
