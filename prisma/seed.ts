@@ -32,6 +32,7 @@ const demoAsphaltTireModels = [
 
 async function main() {
   await prisma.alert.deleteMany();
+  await prisma.tireSensorReading.deleteMany();
   await prisma.activityTire.deleteMany();
   await prisma.activityGpsPoint.deleteMany();
   await prisma.activity.deleteMany();
@@ -130,6 +131,16 @@ async function main() {
       kilometers: 420,
       smartTire: true,
       isActive: true,
+    },
+  });
+
+  await prisma.tireSensorReading.create({
+    data: {
+      deviceId: 'tyre-front-001',
+      userTireId: frontTire.id,
+      pressureBar: frontCatalogTire.minPressure - 1.5,
+      temperatureC: 22,
+      measuredAt: new Date(),
     },
   });
 
