@@ -125,20 +125,20 @@ export class AuthController {
 
     if (error) {
       return {
-        url: `${frontendUrl}/settings?strava=denied`,
+        url: `${frontendUrl}/activites?strava=denied`,
       };
     }
 
     if (!code || !state) {
       return {
-        url: `${frontendUrl}/settings?strava=error`,
+        url: `${frontendUrl}/activites?strava=error`,
       };
     }
 
     await this.authService.linkStravaAccountFromCallback(code, state, scope);
 
     return {
-      url: `${frontendUrl}/settings?strava=connected`,
+      url: `${frontendUrl}/activites?strava=connected`,
     };
   }
 }
