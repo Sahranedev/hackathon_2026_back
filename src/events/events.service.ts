@@ -1,5 +1,7 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CurrentUser } from 'src/security/decorators/current-user.decorator';
+import type { AuthenticatedUser } from 'src/auth/types/authenticated-request.type';
 
 @Injectable()
 export class EventsService {
@@ -35,9 +37,9 @@ export class EventsService {
     }
   }
 
-  async findMyRegistrations() {
+  async findMyRegistrations(@CurrentUser() authenticatedUser: AuthenticatedUser) {
     const user = await this.prisma.user.findFirst({
-      where: { mail: 'demo@email.test' },
+      where: { id: authenticatedUser.id },
     });
 
     if (!user) {

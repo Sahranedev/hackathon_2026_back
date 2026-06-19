@@ -1,5 +1,7 @@
 import { Controller, Get, Param, Post } from '@nestjs/common';
 import { EventsService } from './events.service';
+import type { AuthenticatedUser } from 'src/auth/types/authenticated-request.type';
+import { CurrentUser } from 'src/security/decorators/current-user.decorator';
 
 @Controller('api/events')
 export class EventsController {
@@ -16,7 +18,7 @@ export class EventsController {
   }
 
   @Get('me/registrations')
-  findMyRegistrations() {
-    return this.eventsService.findMyRegistrations();
+  findMyRegistrations(@CurrentUser() authenticatedUser: AuthenticatedUser) {
+    return this.eventsService.findMyRegistrations(authenticatedUser);
   }
 }
