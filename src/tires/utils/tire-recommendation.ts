@@ -286,17 +286,32 @@ export function buildRecommendationReason(
   return reasons.join(', ');
 }
 
+/** Terrains proches utilisés si le catalogue ne contient pas le terrain exact. */
+const TERRAIN_RECOMMENDATION_FALLBACKS: Partial<
+  Record<TerrainType, TerrainType[]>
+> = {
+  [TerrainType.SAND]: [TerrainType.SOFT, TerrainType.MIXED],
+  [TerrainType.WET]: [TerrainType.MIXED, TerrainType.MUD],
+};
+
+function getTerrainRecommendationAttempts(
+  primary: TerrainType,
+): TerrainType[] {
+  const fallbacks = TERRAIN_RECOMMENDATION_FALLBACKS[primary] ?? [];
+  return [primary, ...fallbacks.filter((terrain) => terrain !== primary)];
+}
+
 /**
- * Étape 3 — Score, déduplication et limitation.
- * Utilise le fallback uniquement si les filtres stricts ne donnent aucun résultat.
+ * Étape 3 — Score, déduplication et limitation pour un terrain cible.
+ * Utilise le fallback catalogue uniquement si les filtres stricts ne donnent aucun résultat.
  */
-export function recommendTires(
+function rankTireRecommendations(
   context: TireRecommendationContext,
+  activityTerrain: TerrainType,
 ): ScoredTireRecommendation[] {
   const {
     catalog,
     currentTire,
-    activityTerrain,
     isElectricBike = false,
     excludeTireId = currentTire.id,
     limit = DEFAULT_RECOMMENDATION_LIMIT,
@@ -365,4 +380,24 @@ export function recommendTires(
       ),
       isFallback,
     }));
+}
+
+/**
+ * Étape 3 — Score, déduplication et limitation.
+ * Essaie le terrain demandé puis des terrains proches si le catalogue est incomplet.
+ */
+export function recommendTires(
+  context: TireRecommendationContext,
+): ScoredTireRecommendation[] {
+  for (const terrain of getTerrainRecommendationAttempts(
+    context.activityTerrain,
+  )) {
+    const results = rankTireRecommendations(context, terrain);
+
+    if (results.length > 0) {
+      return results;
+    }
+  }
+
+  return [];
 }

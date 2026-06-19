@@ -51,14 +51,22 @@ export class TerrainRule implements TireRule {
       return null;
     }
 
-    // Terrain le plus récent non supporté : base de la recommandation ciblée
-    const primaryTerrain = unsupportedTerrains[0];
+    // Parcourt les terrains non supportés jusqu'à trouver des recommandations catalogue.
+    let recommendations: Awaited<
+      ReturnType<TireRecommendationService['recommend']>
+    > = [];
 
-    const recommendations = await this.tireRecommendation.recommend({
-      currentTire: tire,
-      activityTerrain: primaryTerrain,
-      excludeTireId: tire.id,
-    });
+    for (const terrain of unsupportedTerrains) {
+      recommendations = await this.tireRecommendation.recommend({
+        currentTire: tire,
+        activityTerrain: terrain,
+        excludeTireId: tire.id,
+      });
+
+      if (recommendations.length > 0) {
+        break;
+      }
+    }
 
     const terrainList = formatTerrainList(unsupportedTerrains);
 
