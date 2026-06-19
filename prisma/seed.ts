@@ -126,7 +126,7 @@ async function main() {
         connect: { id: demoTires[1].id },
       },
       position: 'REAR',
-      deviceId: 'tyre-rear-001',
+      deviceId: 'demo-rear-001',
       kilometers: 760,
       smartTire: true,
       isActive: true,
