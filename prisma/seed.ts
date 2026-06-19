@@ -1,6 +1,10 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client';
+import {
+  ActivityStatus,
+  PrismaClient,
+  TerrainType,
+} from '../src/generated/prisma/client';
 import { hashPassword } from '../src/common/password.util';
 import { michelinRetails } from './data/michelin-retails';
 import { michelinTires } from './data/michelin-tires';
@@ -19,6 +23,12 @@ const demoUserEmail = 'demo@email.test';
 const demoUserPassword = 'password';
 const defaultTireImageUrl =
   'https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp';
+
+const demoAsphaltTireModels = [
+  '28"-25mm POWER CUP TUBULAR BLACK',
+  '28"-25mm POWER CUP TUBULAR CLASSIC',
+  '28"-28mm POWER CUP TUBULAR BLACK',
+] as const;
 
 async function main() {
   await prisma.alert.deleteMany();
@@ -91,15 +101,21 @@ async function main() {
   });
 
   const demoTires = await prisma.tireData.findMany({
+    where: {
+      model: { in: [...demoAsphaltTireModels] },
+    },
     orderBy: {
       id: 'asc',
     },
-    take: 3,
   });
 
   if (demoTires.length < 3) {
-    throw new Error('Impossible de créer les pneus utilisateur de démo.');
+    throw new Error(
+      'Impossible de trouver les pneus route asphalte pour la démo.',
+    );
   }
+
+  const [frontCatalogTire, rearCatalogTire, spareCatalogTire] = demoTires;
 
   const frontTire = await prisma.userTire.create({
     data: {
@@ -107,7 +123,7 @@ async function main() {
         connect: { id: demoUser.id },
       },
       tire: {
-        connect: { id: demoTires[0].id },
+        connect: { id: frontCatalogTire.id },
       },
       position: 'FRONT',
       deviceId: 'tyre-front-001',
@@ -123,7 +139,7 @@ async function main() {
         connect: { id: demoUser.id },
       },
       tire: {
-        connect: { id: demoTires[1].id },
+        connect: { id: rearCatalogTire.id },
       },
       position: 'REAR',
       deviceId: 'demo-rear-001',
@@ -139,7 +155,7 @@ async function main() {
         connect: { id: demoUser.id },
       },
       tire: {
-        connect: { id: demoTires[2].id },
+        connect: { id: spareCatalogTire.id },
       },
       position: 'SPARE',
       deviceId: 'tyre-spare-001',
@@ -149,12 +165,13 @@ async function main() {
     },
   });
 
-  for (const activity of [
+  const demoActivities = [
     {
-      name: 'Sortie gravel matinale',
+      name: 'Sortie route matinale',
       kilometers: 42.6,
       durationSeconds: 6420,
-      terrainType: 'MIXED',
+      terrainType: TerrainType.ASPHALT,
+      status: ActivityStatus.COMPLETED,
       startedAt: new Date('2026-06-12T07:30:00.000Z'),
       endedAt: new Date('2026-06-12T09:17:00.000Z'),
       date: new Date('2026-06-12T00:00:00.000Z'),
@@ -163,29 +180,47 @@ async function main() {
       name: 'Entrainement route',
       kilometers: 58.2,
       durationSeconds: 8130,
-      terrainType: 'ASPHALT',
+      terrainType: TerrainType.ASPHALT,
+      status: ActivityStatus.COMPLETED,
       startedAt: new Date('2026-06-14T16:10:00.000Z'),
       endedAt: new Date('2026-06-14T18:25:30.000Z'),
       date: new Date('2026-06-14T00:00:00.000Z'),
     },
     {
-      name: 'Reco chemins humides',
-      kilometers: 24.8,
-      durationSeconds: 4380,
-      terrainType: 'MUD',
-      startedAt: new Date('2026-06-16T06:50:00.000Z'),
-      endedAt: new Date('2026-06-16T08:03:00.000Z'),
-      date: new Date('2026-06-16T00:00:00.000Z'),
+      name: 'Entrainement route',
+      kilometers: 42.6,
+      durationSeconds: 6420,
+      terrainType: TerrainType.ASPHALT,
+      status: ActivityStatus.COMPLETED,
+      startedAt: new Date('2026-06-14T16:10:00.000Z'),
+      endedAt: new Date('2026-06-14T18:25:30.000Z'),
+      date: new Date('2026-06-14T00:00:00.000Z'),
     },
-  ] as const) {
+  ] as const;
+
+  for (const activity of demoActivities) {
+    const midPointAt =
+      activity.durationSeconds != null
+        ? new Date(
+            activity.startedAt.getTime() +
+              Math.floor(activity.durationSeconds / 2) * 1000,
+          )
+        : null;
+
     await prisma.activity.create({
       data: {
-        ...activity,
+        name: activity.name,
+        kilometers: activity.kilometers,
+        durationSeconds: activity.durationSeconds,
+        terrainType: activity.terrainType,
+        startedAt: activity.startedAt,
+        endedAt: activity.endedAt,
+        date: activity.date,
         user: {
           connect: { id: demoUser.id },
         },
         source: 'APP_TRACKED',
-        status: 'COMPLETED',
+        status: activity.status,
         tires: {
           create: [
             {
@@ -203,29 +238,34 @@ async function main() {
         gpsPoints: {
           create: [
             {
-              latitude: 48.8566,
-              longitude: 2.3522,
-              altitude: 35,
+              latitude: 45.8992,
+              longitude: 6.1294,
+              altitude: 448,
               speed: 7.8,
               recordedAt: activity.startedAt,
             },
-            {
-              latitude: 48.865,
-              longitude: 2.341,
-              altitude: 41,
-              speed: 8.2,
-              recordedAt: new Date(
-                activity.startedAt.getTime() +
-                  Math.floor(activity.durationSeconds / 2) * 1000,
-              ),
-            },
-            {
-              latitude: 48.878,
-              longitude: 2.315,
-              altitude: 48,
-              speed: 7.5,
-              recordedAt: activity.endedAt,
-            },
+            ...(midPointAt
+              ? [
+                  {
+                    latitude: 45.9058,
+                    longitude: 6.1182,
+                    altitude: 462,
+                    speed: 8.2,
+                    recordedAt: midPointAt,
+                  },
+                ]
+              : []),
+            ...(activity.endedAt
+              ? [
+                  {
+                    latitude: 45.9124,
+                    longitude: 6.1068,
+                    altitude: 471,
+                    speed: 7.5,
+                    recordedAt: activity.endedAt,
+                  },
+                ]
+              : []),
           ],
         },
       },
