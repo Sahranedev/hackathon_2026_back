@@ -13,7 +13,7 @@ export class EventsService {
 
   async register(eventId: string) {
     const user = await this.prisma.user.findFirst({
-      where: { mail: 'demo@michelin-bike.local' },
+      where: { mail: 'demo@email.test' },
     });
 
     if (!user) {
@@ -37,7 +37,7 @@ export class EventsService {
 
   async findMyRegistrations() {
     const user = await this.prisma.user.findFirst({
-      where: { mail: 'demo@michelin-bike.local' },
+      where: { mail: 'demo@email.test' },
     });
 
     if (!user) {

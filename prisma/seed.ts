@@ -15,7 +15,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(connectionString),
 });
 
-const demoUserEmail = 'demo@michelin-bike.local';
+const demoUserEmail = 'demo@email.test';
 const demoUserPassword = 'password';
 const defaultTireImageUrl =
   'https://dxm.contentcenter.michelin.com/api/wedia/dam/transform/b98rpyxf61b4xxh5ifhzwrhwxr/bi-165_3528706657283_tire_michelin_city-cargo-comp-line_20-x-2-point-40_a_main_1-30_nopad.webp';
